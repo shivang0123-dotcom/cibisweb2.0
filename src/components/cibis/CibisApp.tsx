@@ -6,6 +6,8 @@ import { Navbar } from "./Navbar";
 import { Hero } from "./Hero";
 import { FeaturedPartner, TopRestaurants, FeaturedStory, FoodStories, Newsletter } from "./Sections";
 import { Footer } from "./Footer";
+import { SearchResults } from "./SearchResults";
+import { DishPage, RestaurantPage, CityPage, ArticleDetail, RestaurantListing, StoriesListing, ExperiencePage } from "./DetailPages";
 
 type Route = { view: string; query: string };
 
@@ -17,7 +19,7 @@ function Placeholder({ view, go }: { view: string; go: (v: string, q?: string) =
         <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "14px" }}>Coming next</div>
         <h1 style={{ fontSize: "48px", fontWeight: 600, letterSpacing: "-0.03em", color: "var(--text)", marginBottom: "16px" }}>{title}</h1>
         <p style={{ fontSize: "18px", color: "var(--text-2)", maxWidth: "520px", margin: "0 auto 32px" }}>
-          This screen is part of the full CIBISWEB design and will be built out next. The homepage is complete and pixel-faithful to the handoff.
+          This screen is part of the full CIBISWEB design and will be built out next.
         </p>
         <div style={{ display: "flex", justifyContent: "center" }}>
           <Btn variant="primary" size="lg" icon="arrow-right" onClick={() => go("home")}>Back to homepage</Btn>
@@ -41,13 +43,15 @@ export function CibisApp() {
     }, { threshold: 0.12 });
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [route.view]);
+  }, [route.view, route.query]);
+
+  const { view, query } = route;
 
   return (
     <LangProvider>
       <NavContext.Provider value={{ go }}>
-        <Navbar current={route.view} />
-        {route.view === "home" ? (
+        <Navbar current={view} />
+        {view === "home" && (
           <>
             <Hero />
             <FeaturedPartner />
@@ -56,9 +60,18 @@ export function CibisApp() {
             <FoodStories />
             <Newsletter />
           </>
-        ) : (
-          <Placeholder view={route.view} go={go} />
         )}
+        {view === "search" && <SearchResults query={query} />}
+        {view === "dish" && <DishPage query={query} />}
+        {view === "restaurant" && <RestaurantPage query={query} />}
+        {view === "city" && <CityPage query={query} />}
+        {view === "restaurants" && <RestaurantListing />}
+        {view === "stories" && <StoriesListing query={query} />}
+        {view === "story" && <ArticleDetail query={query} kind="story" />}
+        {view === "video" && <ArticleDetail query={query} kind="video" />}
+        {view === "news" && <ArticleDetail query={query} kind="news" />}
+        {view === "experience" && <ExperiencePage query={query} />}
+        {(view === "about" || view === "contact" || view === "legal" || view === "v2") && <Placeholder view={view} go={go} />}
         <Footer />
       </NavContext.Provider>
     </LangProvider>

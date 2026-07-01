@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import Image from "next/image";
 import { Icon } from "./icons";
 import { Container, Btn, useLang, useGo } from "./ui";
+import { suggestions as buildSuggestions, didYouMean, surprise, type Suggestion } from "./search-utils";
+import { POPULAR_CATEGORIES } from "./data";
 
 const EXPERIENCES = [
   { label: "Fine Dining", icon: "utensils" },
@@ -15,51 +17,17 @@ const EXPERIENCES = [
   { label: "Vegetarian", icon: "leaf" },
 ];
 
-const CATS = [
-  { key: "dishes", label: "Dishes", icon: "utensils", target: "dish" },
-  { key: "restaurants", label: "Restaurants", icon: "store", target: "restaurant" },
-  { key: "stories", label: "Stories", icon: "book-open", target: "dish" },
-  { key: "videos", label: "Videos", icon: "play", target: "dish" },
-  { key: "cities", label: "Cities", icon: "map-pin", target: "city" },
-];
-
-type SearchItem = { cat: string; label: string; kw: string[] };
-const ITEMS: SearchItem[] = [
-  { cat: "dishes", label: "Carbonara", kw: ["carbonara", "pasta", "roman", "rome"] },
-  { cat: "dishes", label: "Spaghetti Carbonara", kw: ["carbonara", "spaghetti", "pasta"] },
-  { cat: "dishes", label: "Carbonara with Truffle", kw: ["carbonara", "truffle", "pasta"] },
-  { cat: "dishes", label: "Cacio e Pepe", kw: ["cacio", "pepe", "pasta", "roman", "rome"] },
-  { cat: "dishes", label: "Margherita Pizza", kw: ["pizza", "margherita", "naples"] },
-  { cat: "dishes", label: "Tiramisu", kw: ["tiramisu", "dessert", "dolce"] },
-  { cat: "dishes", label: "Risotto alla Milanese", kw: ["risotto", "milan", "rice"] },
-  { cat: "dishes", label: "Tagliatelle al Ragù", kw: ["ragu", "tagliatelle", "pasta", "bologna"] },
-  { cat: "restaurants", label: "Osteria Francescana", kw: ["carbonara", "michelin", "modena", "osteria", "fine dining"] },
-  { cat: "restaurants", label: "Da Enzo al 29", kw: ["carbonara", "roman", "rome", "trattoria", "cacio"] },
-  { cat: "restaurants", label: "Roscioli", kw: ["carbonara", "rome", "roman", "pasta"] },
-  { cat: "restaurants", label: "La Pergola", kw: ["michelin", "rome", "fine dining"] },
-  { cat: "restaurants", label: "Trattoria Mario", kw: ["florence", "tuscan", "trattoria"] },
-  { cat: "restaurants", label: "L'Antica Pizzeria", kw: ["pizza", "naples", "margherita"] },
-  { cat: "stories", label: "The History of Carbonara", kw: ["carbonara", "history", "pasta"] },
-  { cat: "stories", label: "Why Carbonara Has No Cream", kw: ["carbonara", "cream", "pasta"] },
-  { cat: "stories", label: "Traditional Roman Carbonara", kw: ["carbonara", "roman", "rome"] },
-  { cat: "stories", label: "The Art of Handmade Pasta", kw: ["pasta", "handmade", "bologna"] },
-  { cat: "videos", label: "How Italian Chefs Make Carbonara", kw: ["carbonara", "video", "pasta"] },
-  { cat: "videos", label: "Traditional Carbonara Recipe", kw: ["carbonara", "recipe", "pasta"] },
-  { cat: "videos", label: "A Day at the Truffle Market", kw: ["truffle", "market", "alba"] },
-  { cat: "cities", label: "Rome", kw: ["carbonara", "rome", "roman", "lazio", "cacio"] },
-  { cat: "cities", label: "Naples", kw: ["pizza", "naples", "margherita"] },
-  { cat: "cities", label: "Milan", kw: ["risotto", "milan"] },
-  { cat: "cities", label: "Florence", kw: ["florence", "tuscan", "bistecca"] },
-  { cat: "cities", label: "Bologna", kw: ["bologna", "ragu", "pasta", "tagliatelle"] },
-];
-const RESTAURANT_NAMES = ITEMS.filter((i) => i.cat === "restaurants").map((i) => i.label.toLowerCase());
 const TRENDING = ["Best Pizza in Naples", "Michelin Restaurants", "Tiramisu"];
+const CAT_ICON: Record<string, string> = {
+  Pizza: "pizza", Pasta: "utensils", Desserts: "coffee", Seafood: "map-pin",
+  Vegetarian: "leaf", "Fine Dining": "award",
+};
 
 function ExperienceChip({ label, icon }: { label: string; icon: string }) {
   const go = useGo();
   const [h, setH] = useState(false);
   return (
-    <button onClick={() => go("experience", label)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+    <button onClick={() => go("search", label)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{ display: "inline-flex", alignItems: "center", gap: "8px", height: "42px", padding: "0 18px", borderRadius: "999px", fontSize: "14px", fontWeight: 500, color: h ? "var(--red)" : "var(--text)", background: "var(--card)", boxShadow: h ? "inset 0 0 0 1.5px var(--red)" : "inset 0 0 0 1px var(--border)", transition: "box-shadow 200ms ease, color 200ms ease" }}>
       <Icon name={icon} size={16} color={h ? "var(--red)" : "var(--text-2)"} />
       {label}
@@ -107,33 +75,31 @@ function SearchBar() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
+  const remember = (term: string) => setRecent((r) => [term, ...r.filter((x) => x !== term)].slice(0, 5));
   const submit = (term?: string) => {
     const val = (term != null ? term : q).trim();
     if (!val) return;
-    const isRest = RESTAURANT_NAMES.includes(val.toLowerCase());
-    go(isRest ? "restaurant" : "dish", val);
+    remember(val);
+    go("search", val);
     setOpen(false);
   };
-  const goItem = (item: SearchItem) => {
-    const meta = CATS.find((c) => c.key === item.cat);
-    go(meta ? meta.target : "dish", item.label);
+  const goSuggestion = (s: Suggestion) => {
+    remember(s.label);
+    const view = s.kind === "restaurant" ? "restaurant" : s.kind === "dish" ? "dish" : s.kind === "city" ? "city" : s.kind === "video" ? "video" : "story";
+    go(view, s.label);
     setOpen(false);
   };
+  const doSurprise = () => { const s = surprise(); go(s.view, s.query); setOpen(false); };
 
   const typing = q.trim().length > 0;
-  const ql = q.trim().toLowerCase();
-  const grouped: Record<string, SearchItem[]> = {};
-  if (typing) {
-    const matched = ITEMS.filter((it) => it.label.toLowerCase().includes(ql) || it.kw.some((k) => k.includes(ql)));
-    CATS.forEach((c) => {
-      const m = matched.filter((i) => i.cat === c.key);
-      if (m.length) grouped[c.key] = m;
-    });
-  }
-  const hasMatches = Object.keys(grouped).length > 0;
+  const grouped = typing ? buildSuggestions(q) : {};
+  const groupKeys = Object.keys(grouped);
+  const hasMatches = groupKeys.length > 0;
+  const suggestion = typing ? didYouMean(q) : null;
 
   return (
     <div ref={wrapRef} style={{ position: "relative", maxWidth: "560px", zIndex: 40 }}>
+      {/* Bar — visually unchanged */}
       <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--card)", borderRadius: "18px", boxShadow: open ? "var(--shadow-lg)" : "var(--shadow)", padding: "10px 10px 10px 22px", transition: "box-shadow 220ms ease", position: "relative", zIndex: 2 }}>
         <Icon name="search" size={21} color="var(--text-2)" />
         <input
@@ -151,47 +117,93 @@ function SearchBar() {
         <Btn variant="primary" size="md" style={{ borderRadius: "13px" }} onClick={() => submit()}>{lang === "IT" ? "Cerca" : "Search"}</Btn>
       </div>
 
+      {/* Floating panel */}
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 12px)", left: 0, right: 0, zIndex: 1,
           background: "rgba(255,255,255,0.85)", backdropFilter: "blur(18px) saturate(180%)", WebkitBackdropFilter: "blur(18px) saturate(180%)",
           borderRadius: "20px", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "var(--shadow-lg)",
-          padding: "12px", maxHeight: "440px", overflowY: "auto", animation: "panelIn 240ms cubic-bezier(.16,1,.3,1)",
+          padding: "12px", maxHeight: "min(70vh, 520px)", overflowY: "auto", animation: "panelIn 240ms cubic-bezier(.16,1,.3,1)",
         }}>
           {!typing && (
             <>
               {recent.length > 0 && (
                 <div style={{ marginBottom: "6px" }}>
                   <PanelLabel action={<button onMouseDown={(e) => { e.preventDefault(); setRecent([]); }} style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)" }}>Clear All</button>}>Recent Searches</PanelLabel>
-                  {recent.map((r) => <PanelRow key={r} icon="clock" onClick={() => setQ(r)}>{r}</PanelRow>)}
+                  {recent.map((r) => <PanelRow key={r} icon="clock" onClick={() => submit(r)}>{r}</PanelRow>)}
                 </div>
               )}
               <div style={{ marginBottom: "6px" }}>
-                <PanelLabel>Trending Searches</PanelLabel>
+                <PanelLabel>Trending</PanelLabel>
                 {TRENDING.map((tr) => <PanelRow key={tr} icon="trending-up" onClick={() => submit(tr)}>{tr}</PanelRow>)}
               </div>
-              <div style={{ margin: "8px 6px 4px", background: "linear-gradient(135deg, #FBE9EA, #F8F1E7)", borderRadius: "16px", padding: "18px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+
+              {/* Discover Something New — Surprise Me */}
+              <div style={{ padding: "0 6px" }}>
+                <PanelLabel>Discover Something New</PanelLabel>
+                <button onMouseDown={(e) => { e.preventDefault(); doSurprise(); }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: "14px", background: "linear-gradient(135deg, #FBE9EA, #F8F1E7)", borderRadius: "16px", padding: "14px 16px", textAlign: "left", transition: "transform 180ms ease" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "none"; }}>
+                  <span style={{ width: "40px", height: "40px", borderRadius: "12px", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", boxShadow: "var(--shadow-sm)" }}>🎲</span>
+                  <span style={{ flex: 1 }}>
+                    <span style={{ display: "block", fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>Surprise Me</span>
+                    <span style={{ display: "block", fontSize: "13px", color: "var(--text-2)" }}>Open a random restaurant, dish, story or city.</span>
+                  </span>
+                  <span style={{ color: "var(--red)" }}><Icon name="arrow-right" size={18} /></span>
+                </button>
+              </div>
+
+              {/* Popular Categories */}
+              <div style={{ padding: "0 6px", marginTop: "8px" }}>
+                <PanelLabel>Popular Categories</PanelLabel>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "0 8px 6px" }}>
+                  {POPULAR_CATEGORIES.map((cat) => (
+                    <button key={cat} onMouseDown={(e) => { e.preventDefault(); remember(cat); go("search", cat); setOpen(false); }}
+                      style={{ display: "inline-flex", alignItems: "center", gap: "7px", height: "36px", padding: "0 14px", borderRadius: "999px", fontSize: "13px", fontWeight: 500, color: "var(--text)", background: "var(--card)", boxShadow: "inset 0 0 0 1px var(--border)", transition: "box-shadow 180ms ease, color 180ms ease" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "inset 0 0 0 1.5px var(--red)"; (e.currentTarget as HTMLElement).style.color = "var(--red)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "inset 0 0 0 1px var(--border)"; (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}>
+                      <Icon name={CAT_ICON[cat] || "utensils"} size={14} color="var(--text-2)" />{cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Discovery CTA */}
+              <div style={{ margin: "8px 6px 4px", background: "#FCFBF8", border: "1px solid var(--border)", borderRadius: "16px", padding: "16px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
                 <div>
                   <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)", marginBottom: "3px" }}>Not sure what to search?</div>
-                  <div style={{ fontSize: "13px", color: "var(--text-2)", lineHeight: 1.5 }}>Explore hand-picked restaurants, dishes and stories from Italy.</div>
+                  <div style={{ fontSize: "13px", color: "var(--text-2)", lineHeight: 1.5 }}>Explore hand-picked restaurants, dishes and stories.</div>
                 </div>
-                <Btn variant="primary" size="sm" iconRight="arrow-right" style={{ flexShrink: 0 }} onClick={() => { setOpen(false); window.scrollTo({ top: 700, behavior: "smooth" }); }}>Explore Now</Btn>
+                <Btn variant="primary" size="sm" iconRight="arrow-right" style={{ flexShrink: 0 }} onClick={() => { setOpen(false); go("restaurants"); }}>Explore Now</Btn>
               </div>
             </>
+          )}
+
+          {typing && suggestion && (
+            <button onMouseDown={(e) => { e.preventDefault(); submit(suggestion); }}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", marginBottom: "4px", borderRadius: "12px", background: "#FBE9EA", textAlign: "left" }}>
+              <Icon name="search" size={16} color="var(--red)" />
+              <span style={{ fontSize: "14px", color: "var(--text)" }}>Did you mean <strong style={{ color: "var(--red)" }}>{suggestion}</strong>?</span>
+            </button>
           )}
 
           {typing && hasMatches && (
             <>
-              {CATS.filter((c) => grouped[c.key]).map((c) => (
-                <div key={c.key} style={{ marginBottom: "4px" }}>
-                  <PanelLabel>{c.label}</PanelLabel>
-                  {grouped[c.key].map((item) => <PanelRow key={item.label} icon={c.icon} onClick={() => goItem(item)}>{item.label}</PanelRow>)}
+              {groupKeys.map((group) => (
+                <div key={group} style={{ marginBottom: "4px" }}>
+                  <PanelLabel>{group}</PanelLabel>
+                  {grouped[group].map((s) => <PanelRow key={s.kind + s.label} icon={s.icon} sub={s.sub} onClick={() => goSuggestion(s)}>{s.label}</PanelRow>)}
                 </div>
               ))}
+              <button onMouseDown={(e) => { e.preventDefault(); submit(); }}
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", height: "44px", marginTop: "4px", borderRadius: "12px", background: "var(--red)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>
+                See all results for “{q.trim()}” <Icon name="arrow-right" size={16} />
+              </button>
             </>
           )}
 
-          {typing && !hasMatches && (
+          {typing && !hasMatches && !suggestion && (
             <div style={{ padding: "28px 16px", textAlign: "center" }}>
               <div style={{ display: "inline-flex", width: "46px", height: "46px", borderRadius: "14px", background: "#F5F3EE", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
                 <Icon name="search-x" size={22} color="var(--text-2)" />
