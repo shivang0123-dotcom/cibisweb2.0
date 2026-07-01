@@ -1,0 +1,25 @@
+-- ============================================================================
+-- Circolo del Bridge — Drop the stale menu_items.category check constraint
+--
+-- THE BUG THIS FIXES
+-- The live menu_items table carried a check constraint from the old elaborate
+-- schema that only allowed these category values:
+--   appetizers, mains, sides, desserts, beverages, specials
+-- But the app's categories (src/lib/menu.ts) are:
+--   Starters, Pasta, Pizza, Main Course, Desserts, Drinks, Coffee, Cocktails
+-- So EVERY menu insert/seed from the app violated the constraint and failed —
+-- which is why menu_items stayed empty in Supabase and menu edits never
+-- persisted (the store silently fell back to its in-memory defaults). It also
+-- blocked the soft-delete / Trash feature, since trashing requires real rows.
+--
+-- The app validates categories in code (/api/menu POST checks
+-- categories.includes(category)), so a DB-level check with stale values adds no
+-- safety — only breakage. Drop it.
+--
+-- ROLLBACK (re-add with the APP's categories, if a DB check is ever wanted):
+--   alter table public.menu_items add constraint menu_items_category_check
+--     check (category in ('Starters','Pasta','Pizza','Main Course',
+--                         'Desserts','Drinks','Coffee','Cocktails'));
+-- ============================================================================
+
+alter table public.menu_items drop constraint if exists menu_items_category_check;
