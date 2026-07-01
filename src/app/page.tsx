@@ -1,8 +1,10 @@
-import { MenuSessionWrapper } from "@/components/menu-session-wrapper";
-
-// The site root goes straight into the ordering flow — no landing splash. A
-// visitor lands directly on the name screen (table 1 by default, same as /menu);
-// if a session already exists they go straight to the menu.
 export default function Home() {
-  return <MenuSessionWrapper tableNumber={1} />;
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+      <h1 className="text-4xl font-bold tracking-tight">CibisWeb 2.0</h1>
+      <p className="text-lg opacity-70">
+        Fresh start — ready to build from your design.
+      </p>
+    </main>
+  );
 }

@@ -1,78 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  /* Brand — terracotta */
-  --terra-600: #c4703c;
-  --terra-700: #a35a2c;
-  --terra-100: #fae7d6;
-
-  /* Neutrals */
-  --cream-50:  #faf0e8;
-  --cream-100: #f2e8dc;
-  --border:    #e8ddd2;
-  --border-strong: #d6c9b8;
-
-  /* Ink */
-  --ink-900: #1a1410;
-  --ink-700: #47403a;
-  --ink-500: #736860;
-  --ink-300: #a89e94;
-
-  /* Accent */
-  --blue-500: #6b8fa6;
-
-  /* Semantic */
-  --green-600: #2f7d4f;
-  --green-100: #e3f1e8;
-  --amber-500: #c9821f;
-  --amber-100: #f8ecd7;
-
-  --background: var(--cream-50);
-  --foreground: var(--ink-900);
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-serif), Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
-}
-
-button,
-a,
-input {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Tactile press feedback on every button (works on all devices). */
-button {
-  transition: transform 0.09s ease;
-  touch-action: manipulation;
-}
-
-button:active:not(:disabled) {
-  transform: scale(0.96);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  button {
-    transition: none;
-  }
-  button:active:not(:disabled) {
-    transform: none;
-  }
-}
-
-.scrollbar-hide {
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+  font-family: system-ui, -apple-system, sans-serif;
 }
