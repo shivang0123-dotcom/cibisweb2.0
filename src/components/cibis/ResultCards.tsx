@@ -181,10 +181,40 @@ export function NewsCard({ n }: { n: News }) {
   );
 }
 
+/* ── Recipe card (dish presented as a cookable recipe) ──────────── */
+export function RecipeCard({ d }: { d: Dish }) {
+  const go = useGo();
+  const { h, on } = useHover();
+  return (
+    <div {...on} onClick={() => go("dish", d.name)}
+      style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
+      <div style={{ position: "relative", height: "190px", overflow: "hidden" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={d.image} alt={d.name} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
+        <span style={{ position: "absolute", top: "14px", left: "14px", display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: "var(--success)", borderRadius: "999px", padding: "6px 12px" }}>
+          <Icon name="chef-hat" size={13} color="#fff" />Recipe
+        </span>
+      </div>
+      <div style={{ padding: "20px 22px" }}>
+        <h3 style={{ fontSize: "19px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.2, marginBottom: "12px" }}>{d.name}</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "13px", color: "var(--text-2)", marginBottom: "16px", flexWrap: "wrap" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="timer" size={14} color="var(--text-2)" />{d.prepMinutes + d.cookMinutes} min</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="flame" size={14} color="var(--text-2)" />{d.difficulty}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="users" size={14} color="var(--text-2)" />Serves {d.servings}</span>
+        </div>
+        <div style={{ fontSize: "13px", color: "var(--text-2)", lineHeight: 1.55, paddingTop: "14px", borderTop: "1px solid var(--border)" }}>
+          {d.ingredients.slice(0, 3).join(" · ")}{d.ingredients.length > 3 ? " · …" : ""}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Dispatcher ─────────────────────────────────────────────────── */
 export function ResultCard({ r }: { r: Result }) {
   if (r.kind === "restaurant") return <RestaurantCard r={r.item} />;
   if (r.kind === "dish") return <DishCard d={r.item} />;
+  if (r.kind === "recipe") return <RecipeCard d={r.item} />;
   if (r.kind === "story") return <StoryResultCard s={r.item} />;
   if (r.kind === "video") return <VideoCard v={r.item} />;
   if (r.kind === "city") return <CityCard c={r.item} />;

@@ -2,13 +2,14 @@
 import {
   CITIES, DISHES, RESTAURANTS, STORIES, VIDEOS, NEWS,
   type Dish, type Restaurant, type Story, type Video, type News, type City,
-  cityById, dishByName,
+  cityById, dishByName, experienceByLabel, type Experience,
 } from "./data";
 
-export type ResultKind = "restaurant" | "dish" | "story" | "video" | "city" | "news";
+export type ResultKind = "restaurant" | "dish" | "recipe" | "story" | "video" | "city" | "news";
 export type Result =
   | { kind: "restaurant"; item: Restaurant }
   | { kind: "dish"; item: Dish }
+  | { kind: "recipe"; item: Dish }
   | { kind: "story"; item: Story }
   | { kind: "video"; item: Video }
   | { kind: "city"; item: City }
@@ -95,9 +96,11 @@ export function suggestions(query: string): Record<string, Suggestion[]> {
   DISHES.filter((d) => matches(query, d.name, [d.category, cityById(d.cityId)?.name || ""])).slice(0, 5)
     .forEach((d) => push("Dishes", { kind: "dish", label: d.name, icon: "utensils", sub: d.category }));
   STORIES.filter((s) => matches(query, s.title)).slice(0, 3)
-    .forEach((s) => push("Stories", { kind: "story", label: s.title, icon: "book-open", sub: s.category }));
+    .forEach((s) => push("Stories", { kind: "story", label: s.title, icon: "book-open", sub: `${s.category} · ${s.readTime}` }));
+  DISHES.filter((d) => matches(query, d.name, [d.category])).slice(0, 3)
+    .forEach((d) => push("Recipes", { kind: "recipe", label: d.name, icon: "chef-hat", sub: `${d.prepMinutes + d.cookMinutes} min · ${d.difficulty}` }));
   CITIES.filter((c) => matches(query, c.name, [c.region])).slice(0, 3)
-    .forEach((c) => push("Cities", { kind: "city", label: c.name, icon: "map-pin", sub: c.region }));
+    .forEach((c) => push("Cities", { kind: "city", label: c.name, icon: "map-pin", sub: `${RESTAURANTS.filter((r) => r.cityId === c.id).length} restaurants · ${c.region}` }));
   VIDEOS.filter((v) => matches(query, v.title)).slice(0, 3)
     .forEach((v) => push("Videos", { kind: "video", label: v.title, icon: "play", sub: v.duration }));
   return out;
@@ -107,12 +110,79 @@ export function suggestions(query: string): Record<string, Suggestion[]> {
 export function searchAll(query: string): Result[] {
   const res: Result[] = [];
   RESTAURANTS.filter((r) => matches(query, r.name, [r.cuisine, cityById(r.cityId)?.name || ""])).forEach((item) => res.push({ kind: "restaurant", item }));
-  DISHES.filter((d) => matches(query, d.name, [d.category, cityById(d.cityId)?.name || ""])).forEach((item) => res.push({ kind: "dish", item }));
+  const dishHits = DISHES.filter((d) => matches(query, d.name, [d.category, cityById(d.cityId)?.name || "", ...d.ingredients.slice(0, 3), d.wine.name]));
+  dishHits.forEach((item) => res.push({ kind: "dish", item }));
+  dishHits.forEach((item) => res.push({ kind: "recipe", item }));
   STORIES.filter((s) => matches(query, s.title) && s.category !== "News").forEach((item) => res.push({ kind: "story", item }));
   VIDEOS.filter((v) => matches(query, v.title)).forEach((item) => res.push({ kind: "video", item }));
   CITIES.filter((c) => matches(query, c.name, [c.region])).forEach((item) => res.push({ kind: "city", item }));
   NEWS.filter((n) => matches(query, n.title, [n.tag])).forEach((item) => res.push({ kind: "news", item }));
   return res;
+}
+
+/* ── Sorting ────────────────────────────────────────────────────── */
+export type SortKey = "relevance" | "rating" | "name";
+export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "relevance", label: "Relevance" },
+  { key: "rating", label: "Highest rated" },
+  { key: "name", label: "Name A–Z" },
+];
+function labelOf(r: Result): string {
+  const it = r.item as { name?: string; title?: string; id?: string };
+  return it.name ?? it.title ?? it.id ?? "";
+}
+export function sortResults(list: Result[], key: SortKey): Result[] {
+  if (key === "relevance") return list;
+  const copy = [...list];
+  if (key === "name") copy.sort((a, b) => labelOf(a).localeCompare(labelOf(b)));
+  if (key === "rating") copy.sort((a, b) => (("rating" in b.item ? (b.item as { rating?: number }).rating || 0 : 0) - ("rating" in a.item ? (a.item as { rating?: number }).rating || 0 : 0)));
+  return copy;
+}
+
+/* ── Discovery: popular picks, related searches, similar items ──── */
+export const popularDishes = (n = 3): Dish[] => [...DISHES].sort((a, b) => b.rating - a.rating).slice(0, n);
+export const popularRestaurants = (n = 3): Restaurant[] => [...RESTAURANTS].sort((a, b) => b.rating - a.rating).slice(0, n);
+export const popularCities = (n = 3): City[] => CITIES.slice(0, n);
+export function relatedSearches(query: string): string[] {
+  const q = query.trim().toLowerCase();
+  const pool = [...DISHES.map((d) => d.name), ...CITIES.map((c) => c.name), ...RESTAURANTS.map((r) => r.name)];
+  const near = pool.filter((t) => { const tl = t.toLowerCase(); return tl !== q && (tl[0] === q[0] || lev(q.slice(0, 4), tl.slice(0, 4)) <= 2); });
+  const picks = near.slice(0, 4);
+  return picks.length >= 3 ? picks : [...picks, "Carbonara", "Rome", "Margherita Pizza"].slice(0, 4);
+}
+export function similarRestaurants(r: Restaurant, n = 3): Restaurant[] {
+  return RESTAURANTS
+    .filter((x) => x.id !== r.id)
+    .sort((a, b) => {
+      const score = (y: Restaurant) => (y.cityId === r.cityId ? 2 : 0) + (y.cuisine === r.cuisine ? 2 : 0) + (y.fineDining === r.fineDining ? 1 : 0);
+      return score(b) - score(a);
+    })
+    .slice(0, n);
+}
+
+/* ── Experience page content selection ──────────────────────────── */
+export function experienceContent(label: string): { meta: Experience | undefined; restaurants: Restaurant[]; dishes: Dish[]; stories: Story[]; videos: Video[] } {
+  const meta = experienceByLabel(label);
+  if (!meta) return { meta, restaurants: [], dishes: [], stories: [], videos: [] };
+  const m = meta.match;
+  let restaurants = RESTAURANTS.filter((r) =>
+    (m.cityId ? r.cityId === m.cityId : true) &&
+    (m.michelin ? r.michelin > 0 : true) &&
+    (m.fineDining ? r.fineDining : true) &&
+    (m.vegetarian ? r.vegetarian : true) &&
+    (m.cuisineIncludes ? m.cuisineIncludes.some((c) => r.cuisine.includes(c)) || !m.categories : true)
+  );
+  if (m.cuisineIncludes && restaurants.length < 3) restaurants = RESTAURANTS.filter((r) => m.cuisineIncludes!.some((c) => r.cuisine.includes(c)));
+  if (restaurants.length < 3) restaurants = [...restaurants, ...popularRestaurants(6).filter((r) => !restaurants.includes(r))];
+  let dishes = DISHES.filter((d) =>
+    (m.cityId ? d.cityId === m.cityId : true) &&
+    (m.vegetarian ? d.vegetarian : true) &&
+    (m.categories && !m.cityId ? m.categories.includes(d.category) : true)
+  );
+  if (dishes.length < 3) dishes = [...dishes, ...popularDishes(6).filter((d) => !dishes.includes(d))];
+  const stories = STORIES.filter((s) => (m.cityId ? s.cityId === m.cityId : true)).slice(0, 3);
+  const videos = VIDEOS.slice(0, 3);
+  return { meta, restaurants: restaurants.slice(0, 6), dishes: dishes.slice(0, 6), stories, videos };
 }
 
 /* If a query is empty (e.g. a category browse) return a broad mix */
@@ -124,8 +194,14 @@ export function browseByCategory(category: string): Result[] {
 }
 
 /* ── Smart filters ──────────────────────────────────────────────── */
-export type SmartFilter = "Vegetarian" | "Michelin" | "Fine Dining" | "Open Now" | "Rating 4.5+";
-export const SMART_FILTERS: SmartFilter[] = ["Vegetarian", "Michelin", "Fine Dining", "Open Now", "Rating 4.5+"];
+export type SmartFilter =
+  | "Vegetarian" | "Seafood" | "Michelin" | "Fine Dining" | "Open Now"
+  | "Rating 4.5+" | "€€ or less" | "Easy" | "Under 45 min";
+export const SMART_FILTERS: SmartFilter[] = [
+  "Vegetarian", "Seafood", "Michelin", "Fine Dining", "Open Now",
+  "Rating 4.5+", "€€ or less", "Easy", "Under 45 min",
+];
+const isDishy = (r: Result): r is Extract<Result, { kind: "dish" | "recipe" }> => r.kind === "dish" || r.kind === "recipe";
 export function passesSmart(r: Result, active: Set<SmartFilter>): boolean {
   if (active.size === 0) return true;
   for (const f of active) {
@@ -133,15 +209,25 @@ export function passesSmart(r: Result, active: Set<SmartFilter>): boolean {
       const rating = "rating" in r.item ? (r.item as { rating?: number }).rating : undefined;
       if (rating == null || rating < 4.5) return false;
     } else if (f === "Vegetarian") {
-      if (r.kind === "dish" && !r.item.vegetarian) return false;
-      if (r.kind === "restaurant" && !r.item.vegetarian) return false;
-      if (r.kind !== "dish" && r.kind !== "restaurant") return false;
+      if (isDishy(r)) { if (!r.item.vegetarian) return false; }
+      else if (r.kind === "restaurant") { if (!r.item.vegetarian) return false; }
+      else return false;
+    } else if (f === "Seafood") {
+      if (isDishy(r)) { if (r.item.category !== "Seafood") return false; }
+      else if (r.kind === "restaurant") { if (!r.item.cuisine.includes("Seafood")) return false; }
+      else return false;
     } else if (f === "Michelin") {
       if (r.kind !== "restaurant" || r.item.michelin === 0) return false;
     } else if (f === "Fine Dining") {
       if (r.kind !== "restaurant" || !r.item.fineDining) return false;
     } else if (f === "Open Now") {
       if (r.kind !== "restaurant" || !r.item.openNow) return false;
+    } else if (f === "€€ or less") {
+      if (r.kind !== "restaurant" || r.item.price > 2) return false;
+    } else if (f === "Easy") {
+      if (!isDishy(r) || r.item.difficulty !== "Easy") return false;
+    } else if (f === "Under 45 min") {
+      if (!isDishy(r) || r.item.prepMinutes + r.item.cookMinutes >= 45) return false;
     }
   }
   return true;

@@ -7,7 +7,7 @@ import { Hero } from "./Hero";
 import { FeaturedPartner, TopRestaurants, FeaturedStory, FoodStories, Newsletter } from "./Sections";
 import { Footer } from "./Footer";
 import { SearchResults } from "./SearchResults";
-import { DishPage, RestaurantPage, CityPage, ArticleDetail, RestaurantListing, StoriesListing, ExperiencePage } from "./DetailPages";
+import { DishPage, RestaurantPage, CityPage, ArticleDetail, RestaurantListing, StoriesListing, ExperiencePage, AboutPage, ContactPage } from "./DetailPages";
 
 type Route = { view: string; query: string };
 
@@ -71,7 +71,9 @@ export function CibisApp() {
         {view === "video" && <ArticleDetail query={query} kind="video" />}
         {view === "news" && <ArticleDetail query={query} kind="news" />}
         {view === "experience" && <ExperiencePage query={query} />}
-        {(view === "about" || view === "contact" || view === "legal" || view === "v2") && <Placeholder view={view} go={go} />}
+        {view === "about" && <AboutPage />}
+        {view === "contact" && <ContactPage />}
+        {(view === "legal" || view === "v2") && <Placeholder view={view} go={go} />}
         <Footer />
       </NavContext.Provider>
     </LangProvider>

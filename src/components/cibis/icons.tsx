@@ -5,6 +5,9 @@ import {
   ArrowRight, Star, Search, User, Globe, Utensils, Pizza, Heart, MapPin,
   Coffee, Award, Leaf, Store, BookOpen, Play, Clock, TrendingUp, ArrowUpRight,
   X, SearchX, CalendarCheck, Calendar, Mail, Apple,
+  Mic, Wine, ChefHat, ChevronDown, Phone, Users, Flame, Timer, Info,
+  Sparkles, Lightbulb, PartyPopper, Gem, ShoppingBag, Navigation,
+  AlertTriangle, CheckCircle2, ArrowLeft,
   type LucideIcon,
 } from "lucide-react";
 
@@ -52,6 +55,11 @@ const MAP: Record<string, LucideIcon | ((p: { size?: number; color?: string }) =
   "trending-up": TrendingUp, "arrow-up-right": ArrowUpRight, x: X, "search-x": SearchX,
   "calendar-check": CalendarCheck, calendar: Calendar, mail: Mail, apple: Apple,
   instagram: Instagram, facebook: Facebook, twitter: Twitter, youtube: Youtube,
+  mic: Mic, wine: Wine, "chef-hat": ChefHat, "chevron-down": ChevronDown,
+  phone: Phone, users: Users, flame: Flame, timer: Timer, info: Info,
+  sparkles: Sparkles, lightbulb: Lightbulb, "party-popper": PartyPopper,
+  gem: Gem, "shopping-bag": ShoppingBag, navigation: Navigation,
+  "alert-triangle": AlertTriangle, "check-circle": CheckCircle2, "arrow-left": ArrowLeft,
 };
 
 export function Icon({

@@ -4,14 +4,15 @@ import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { Icon } from "./icons";
 import { Container, Btn, Stars, useGo } from "./ui";
-import { DishCard, RestaurantCard, StoryResultCard, VideoCard, NewsCard } from "./ResultCards";
+import { DishCard, RestaurantCard, StoryResultCard, VideoCard, NewsCard, RecipeCard } from "./ResultCards";
 import {
   DISHES, RESTAURANTS, STORIES, VIDEOS, NEWS,
-  cityById, dishByName, restaurantByName, cityByName,
+  cityById, dishByName, restaurantByName, cityByName, cityExtra,
 } from "./data";
 import {
   servedCount, restaurantsServing, relatedDishes, dishStories, dishVideos,
-  cityRestaurants, cityDishes, cityStories, cityVideos, primaryEntity,
+  cityRestaurants, cityDishes, cityStories, cityVideos,
+  similarRestaurants, experienceContent,
 } from "./search-utils";
 
 /* Shared section shell */
@@ -70,11 +71,28 @@ export function DishPage({ query }: { query: string }) {
               <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "14px" }}>{dish.category}</div>
               <h1 style={{ fontSize: "58px", fontWeight: 600, letterSpacing: "-0.035em", lineHeight: 1.02, color: "var(--text)", marginBottom: "18px" }}>{dish.name}</h1>
               <p style={{ fontSize: "18px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "26px", maxWidth: "460px" }}>{dish.description}</p>
-              <div style={{ display: "flex", alignItems: "center", gap: "22px", flexWrap: "wrap", marginBottom: "30px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "22px", flexWrap: "wrap", marginBottom: "18px" }}>
                 <Stars rating={dish.rating} />
                 <Meta icon="store" text={`${servedCount(dish)} restaurants`} />
                 <Meta icon="map-pin" text={city?.name || ""} />
                 {dish.vegetarian && <Meta icon="leaf" text="Vegetarian" />}
+              </div>
+              {/* Quick information strip */}
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "30px" }}>
+                {[
+                  { icon: "flame", label: "Difficulty", value: dish.difficulty },
+                  { icon: "timer", label: "Prep", value: `${dish.prepMinutes} min` },
+                  { icon: "clock", label: "Cook", value: `${dish.cookMinutes} min` },
+                  { icon: "users", label: "Serves", value: String(dish.servings) },
+                ].map((q) => (
+                  <div key={q.label} style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "14px", padding: "10px 16px" }}>
+                    <Icon name={q.icon} size={17} color="var(--red)" />
+                    <div>
+                      <div style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)" }}>{q.label}</div>
+                      <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{q.value}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 <Btn variant="primary" size="lg" iconRight="arrow-right" onClick={() => document.getElementById("recipe")?.scrollIntoView({ behavior: "smooth" })}>View Recipe</Btn>
@@ -132,6 +150,70 @@ export function DishPage({ query }: { query: string }) {
         </div>
       </Section>
 
+      <Section label="Good to know" title="Nutrition & allergens">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "28px 30px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)", marginBottom: "18px" }}>Per serving (approx.)</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+              {[
+                ["Calories", `${dish.nutrition.calories}`, "kcal"],
+                ["Protein", `${dish.nutrition.protein}`, "g"],
+                ["Carbs", `${dish.nutrition.carbs}`, "g"],
+                ["Fat", `${dish.nutrition.fat}`, "g"],
+                ["Fiber", `${dish.nutrition.fiber}`, "g"],
+                ["Sugar", `${dish.nutrition.sugar}`, "g"],
+              ].map(([label, val, unit]) => (
+                <div key={label}>
+                  <div style={{ fontSize: "22px", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text)" }}>{val}<span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-2)" }}> {unit}</span></div>
+                  <div style={{ fontSize: "12px", color: "var(--text-2)" }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "28px 30px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)", marginBottom: "18px" }}>Allergens</div>
+            {dish.allergens.length > 0 ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {dish.allergens.map((a) => (
+                  <span key={a} style={{ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "13px", fontWeight: 600, color: "var(--text)", background: "#FCEFD6", borderRadius: "999px", padding: "8px 14px" }}>
+                    <Icon name="alert-triangle" size={14} color="var(--star)" />{a}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: "15px", color: "var(--text-2)" }}>No major allergens in the traditional recipe.</div>
+            )}
+            <div style={{ fontSize: "12px", color: "var(--text-2)", marginTop: "16px", lineHeight: 1.5 }}>Always confirm with the kitchen — regional variations can change ingredients.</div>
+          </div>
+        </div>
+      </Section>
+
+      <Section label="Pairing" title="What to drink">
+        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "30px 34px", display: "flex", alignItems: "center", gap: "22px", maxWidth: "720px", flexWrap: "wrap" }}>
+          <span style={{ width: "58px", height: "58px", borderRadius: "16px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Icon name="wine" size={26} color="var(--red)" />
+          </span>
+          <div style={{ flex: 1, minWidth: "240px" }}>
+            <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--red)", marginBottom: "4px" }}>{dish.wine.type === "None" ? "No pairing" : `${dish.wine.type} wine`}</div>
+            <div style={{ fontSize: "21px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", marginBottom: "6px" }}>{dish.wine.name}</div>
+            <div style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.55 }}>{dish.wine.note}</div>
+          </div>
+        </div>
+      </Section>
+
+      <Section label="Did you know?" title="Fun facts">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px" }}>
+          {dish.funFacts.map((f, i) => (
+            <div key={i} style={{ display: "flex", gap: "14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "20px 22px" }}>
+              <span style={{ width: "34px", height: "34px", borderRadius: "10px", background: "#FCEFD6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icon name="sparkles" size={16} color="var(--star)" />
+              </span>
+              <p style={{ fontSize: "14px", color: "var(--text)", lineHeight: 1.6, paddingTop: "5px" }}>{f}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+
       <div id="serving" />
       {rests.length > 0 && <Section label="Where to eat" title="Restaurants serving it" action={<Btn variant="outline" size="sm" onClick={() => go("restaurants")}>All restaurants</Btn>}><Grid>{rests.map((r) => <RestaurantCard key={r.id} r={r} />)}</Grid></Section>}
       {vids.length > 0 && <Section label="Watch" title="Videos"><Grid>{vids.map((v) => <VideoCard key={v.id} v={v} />)}</Grid></Section>}
@@ -149,6 +231,9 @@ export function RestaurantPage({ query }: { query: string }) {
   const r = restaurantByName(query) || RESTAURANTS.find((x) => x.name.toLowerCase().includes(query.toLowerCase())) || RESTAURANTS[0];
   const city = cityById(r.cityId);
   const menu = r.signatureDishes.map((n) => dishByName(n)).filter(Boolean) as NonNullable<ReturnType<typeof dishByName>>[];
+  const similar = similarRestaurants(r);
+  const [reserveOpen, setReserveOpen] = useState(false);
+  const [reserved, setReserved] = useState(false);
 
   return (
     <div>
@@ -171,9 +256,53 @@ export function RestaurantPage({ query }: { query: string }) {
         </div>
       </section>
 
-      <Section label="Overview" title="About" action={<Btn variant="primary" size="md" icon="calendar-check" onClick={() => alert("Reservation flow — demo")}>Reserve a table</Btn>}>
+      <Section label="Overview" title="About" action={<Btn variant="primary" size="md" icon="calendar-check" onClick={() => { setReserved(false); setReserveOpen(true); }}>Reserve a table</Btn>}>
         <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "34px 38px", maxWidth: "860px" }}>
           <p style={{ fontSize: "17px", color: "var(--text-2)", lineHeight: 1.7 }}>{r.blurb} {r.story}</p>
+        </div>
+      </Section>
+
+      <Section label="Plan your visit" title="Hours, chef & location">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
+          {/* Opening hours */}
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "26px 28px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
+              <span style={{ width: "38px", height: "38px", borderRadius: "11px", background: "#E3F0E4", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="clock" size={18} color="var(--success)" /></span>
+              <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>Opening hours</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {r.hours.map((h) => (
+                <div key={h.days} style={{ display: "flex", justifyContent: "space-between", gap: "12px", fontSize: "14px" }}>
+                  <span style={{ fontWeight: 600, color: "var(--text)" }}>{h.days}</span>
+                  <span style={{ color: h.time === "Closed" ? "var(--red)" : "var(--text-2)", textAlign: "right" }}>{h.time}</span>
+                </div>
+              ))}
+            </div>
+            {r.openNow && <div style={{ marginTop: "16px", display: "inline-flex", fontSize: "12px", fontWeight: 600, color: "#fff", background: "var(--success)", borderRadius: "999px", padding: "5px 12px" }}>Open now</div>}
+          </div>
+          {/* Chef */}
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "26px 28px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
+              <span style={{ width: "38px", height: "38px", borderRadius: "11px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="chef-hat" size={18} color="var(--red)" /></span>
+              <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>In the kitchen</span>
+            </div>
+            <div style={{ fontSize: "18px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--text)" }}>{r.chef.name}</div>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--red)", marginBottom: "10px" }}>{r.chef.title}</div>
+            <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6 }}>{r.chef.bio}</p>
+          </div>
+          {/* Location */}
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "26px 28px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
+              <span style={{ width: "38px", height: "38px", borderRadius: "11px", background: "#FCEFD6", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="navigation" size={18} color="var(--star)" /></span>
+              <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>Location</span>
+            </div>
+            <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)", marginBottom: "6px" }}>{r.address}</div>
+            <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "16px" }}>{city?.name}, {city?.region} — in the heart of the {city?.name === "Venice" ? "lagoon city" : "historic centre"}.</p>
+            <button onClick={() => go("city", city?.name || "")}
+              style={{ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "14px", fontWeight: 600, color: "var(--red)" }}>
+              Explore {city?.name} <Icon name="arrow-right" size={15} />
+            </button>
+          </div>
         </div>
       </Section>
 
@@ -201,6 +330,58 @@ export function RestaurantPage({ query }: { query: string }) {
           ))}
         </div>
       </Section>
+
+      {similar.length > 0 && (
+        <Section label="Keep exploring" title="Similar restaurants">
+          <Grid>{similar.map((s) => <RestaurantCard key={s.id} r={s} />)}</Grid>
+        </Section>
+      )}
+
+      {/* Reservation modal */}
+      {reserveOpen && (
+        <div onClick={() => setReserveOpen(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 400, background: "rgba(17,17,17,0.45)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", animation: "panelIn 200ms ease" }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ width: "100%", maxWidth: "440px", background: "var(--card)", borderRadius: "24px", boxShadow: "var(--shadow-float)", padding: "34px 36px", animation: "cardIn 260ms cubic-bezier(.16,1,.3,1)" }}>
+            {!reserved ? (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
+                  <h3 style={{ fontSize: "24px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)" }}>Reserve a table</h3>
+                  <button aria-label="Close" onClick={() => setReserveOpen(false)} style={{ display: "flex", color: "var(--text-2)" }}><Icon name="x" size={20} /></button>
+                </div>
+                <p style={{ fontSize: "14px", color: "var(--text-2)", marginBottom: "24px" }}>{r.name} · {city?.name}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--bg)", borderRadius: "14px", border: "1px solid var(--border)", padding: "0 16px", height: "50px" }}>
+                    <Icon name="calendar" size={17} color="var(--text-2)" />
+                    <input type="date" aria-label="Date" style={{ flex: 1, fontSize: "15px", color: "var(--text)" }} />
+                  </div>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px", background: "var(--bg)", borderRadius: "14px", border: "1px solid var(--border)", padding: "0 16px", height: "50px" }}>
+                      <Icon name="clock" size={17} color="var(--text-2)" />
+                      <input type="time" defaultValue="20:00" aria-label="Time" style={{ flex: 1, fontSize: "15px", color: "var(--text)" }} />
+                    </div>
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px", background: "var(--bg)", borderRadius: "14px", border: "1px solid var(--border)", padding: "0 16px", height: "50px" }}>
+                      <Icon name="users" size={17} color="var(--text-2)" />
+                      <input type="number" min={1} max={12} defaultValue={2} aria-label="Guests" style={{ flex: 1, fontSize: "15px", color: "var(--text)" }} />
+                    </div>
+                  </div>
+                </div>
+                <Btn variant="primary" size="lg" style={{ width: "100%" }} onClick={() => setReserved(true)}>Confirm reservation</Btn>
+                <p style={{ fontSize: "12px", color: "var(--text-2)", textAlign: "center", marginTop: "14px" }}>Demo flow — no real booking is made.</p>
+              </>
+            ) : (
+              <div style={{ textAlign: "center", padding: "10px 0" }}>
+                <span style={{ display: "inline-flex", width: "62px", height: "62px", borderRadius: "50%", background: "#E3F0E4", alignItems: "center", justifyContent: "center", marginBottom: "18px" }}>
+                  <Icon name="check-circle" size={30} color="var(--success)" />
+                </span>
+                <h3 style={{ fontSize: "22px", fontWeight: 600, color: "var(--text)", marginBottom: "8px" }}>Table reserved!</h3>
+                <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "24px" }}>{r.name} is expecting you. A confirmation would arrive by email in the full product.</p>
+                <Btn variant="dark" size="md" style={{ width: "100%" }} onClick={() => setReserveOpen(false)}>Done</Btn>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -210,6 +391,7 @@ export function CityPage({ query }: { query: string }) {
   const c = cityByName(query) || cityById(query) || cityByName(query.split(" ")[0]) || cityRestaurants("rome") && null;
   const city = c || cityByName("Rome")!;
   const rests = cityRestaurants(city.id), dishes = cityDishes(city.id), stories = cityStories(city.id), vids = cityVideos(city.id);
+  const extra = cityExtra(city.id);
   const go = useGo();
 
   return (
@@ -236,6 +418,55 @@ export function CityPage({ query }: { query: string }) {
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "24px" }}>
             {city.famous.map((f) => <span key={f} style={{ fontSize: "13px", fontWeight: 600, color: "#fff", background: "rgba(255,255,255,0.12)", borderRadius: "999px", padding: "7px 15px" }}>{f}</span>)}
           </div>
+        </div>
+      </Section>
+
+      <Section label="Festivals" title="When the city eats together">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "24px" }}>
+          {extra.festivals.map((f) => (
+            <div key={f.name} style={{ display: "flex", gap: "16px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "24px 26px", boxShadow: "var(--shadow-sm)" }}>
+              <span style={{ width: "46px", height: "46px", borderRadius: "13px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icon name="party-popper" size={21} color="var(--red)" />
+              </span>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "17px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--text)" }}>{f.name}</span>
+                  <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--red)", background: "#FBE9EA", borderRadius: "999px", padding: "3px 10px" }}>{f.month}</span>
+                </div>
+                <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6 }}>{f.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section label="Off the beaten path" title="Hidden gems & local markets">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "24px" }}>
+          {extra.hiddenGems.map((g) => (
+            <div key={g.name} style={{ display: "flex", gap: "16px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "24px 26px", boxShadow: "var(--shadow-sm)" }}>
+              <span style={{ width: "46px", height: "46px", borderRadius: "13px", background: "#FCEFD6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icon name="gem" size={20} color="var(--star)" />
+              </span>
+              <div>
+                <div style={{ fontSize: "17px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--text)", marginBottom: "4px" }}>{g.name}</div>
+                <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6 }}>{g.desc}</p>
+              </div>
+            </div>
+          ))}
+          {extra.markets.map((mk) => (
+            <div key={mk.name} style={{ display: "flex", gap: "16px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "24px 26px", boxShadow: "var(--shadow-sm)" }}>
+              <span style={{ width: "46px", height: "46px", borderRadius: "13px", background: "#E3F0E4", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icon name="shopping-bag" size={20} color="var(--success)" />
+              </span>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "17px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--text)" }}>{mk.name}</span>
+                  <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--success)", background: "#E3F0E4", borderRadius: "999px", padding: "3px 10px" }}>Market</span>
+                </div>
+                <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6 }}>{mk.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </Section>
 
@@ -309,12 +540,227 @@ export function RestaurantListing() {
 }
 export function StoriesListing({ query }: { query: string }) {
   const tab = query || "All";
-  const list = tab === "All" ? STORIES : STORIES.filter((s) => (tab === "Videos" ? s.category === "Video" : tab === "News" ? s.category === "News" : tab === "Fun" ? s.category === "Fun" : s.category === "Article"));
+  if (tab === "Videos") {
+    return <Section label="Watch" title="Videos"><Grid>{VIDEOS.map((v) => <VideoCard key={v.id} v={v} />)}</Grid></Section>;
+  }
+  if (tab === "News") {
+    return <Section label="Newsroom" title="Food news"><Grid>{NEWS.map((n) => <NewsCard key={n.id} n={n} />)}</Grid></Section>;
+  }
+  const list = tab === "All" ? STORIES : STORIES.filter((s) => (tab === "Fun" ? s.category === "Fun" : s.category === "Article"));
   return <Section label="Food Stories" title={tab === "All" ? "All stories" : tab}><Grid>{list.map((s) => <StoryResultCard key={s.id} s={s} />)}</Grid></Section>;
 }
+
+/* ── Experience page (reusable layout for every Hero chip) ─────── */
 export function ExperiencePage({ query }: { query: string }) {
-  // reuse search results semantics via primaryEntity fallback — simple listing
-  const entity = primaryEntity(query);
-  if (entity?.kind === "city") return <CityPage query={query} />;
-  return <Section label="Explore" title={query}><Grid>{DISHES.slice(0, 6).map((d) => <DishCard key={d.id} d={d} />)}</Grid></Section>;
+  const go = useGo();
+  const { meta, restaurants, dishes, stories, videos } = experienceContent(query);
+  if (meta?.match.cityId) return <CityPage query={cityById(meta.match.cityId)?.name || query} />;
+  if (!meta) {
+    return (
+      <Section label="Explore" title={query}>
+        <Grid>{DISHES.slice(0, 6).map((d) => <DishCard key={d.id} d={d} />)}</Grid>
+      </Section>
+    );
+  }
+  return (
+    <div>
+      {/* Experience hero */}
+      <section style={{ padding: "0 0 8px" }}>
+        <div style={{ position: "relative", height: "340px", overflow: "hidden" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={meta.image} alt={meta.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(17,17,17,0.78), rgba(17,17,17,0.12) 60%)" }} />
+          <Container style={{ maxWidth: "1320px", position: "absolute", left: 0, right: 0, bottom: "36px" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#F0A8AC", marginBottom: "12px" }}>
+              <Icon name={meta.icon} size={15} color="#F0A8AC" />Experience
+            </div>
+            <h1 style={{ fontSize: "54px", fontWeight: 700, letterSpacing: "-0.035em", color: "#fff", lineHeight: 1.02, marginBottom: "10px" }}>{meta.label}</h1>
+            <p style={{ fontSize: "18px", color: "rgba(255,255,255,0.85)", maxWidth: "540px" }}>{meta.tagline}</p>
+          </Container>
+        </div>
+      </section>
+
+      {/* Introduction */}
+      <Section label="The experience" title={`Why ${meta.label.toLowerCase()}?`}>
+        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "34px 38px", maxWidth: "860px" }}>
+          <p style={{ fontSize: "17px", color: "var(--text-2)", lineHeight: 1.7 }}>{meta.intro}</p>
+        </div>
+      </Section>
+
+      {restaurants.length > 0 && (
+        <Section label="Where to go" title="Featured restaurants" action={<Btn variant="outline" size="sm" onClick={() => go("restaurants")}>All restaurants</Btn>}>
+          <Grid>{restaurants.slice(0, 3).map((r) => <RestaurantCard key={r.id} r={r} />)}</Grid>
+        </Section>
+      )}
+      {dishes.length > 0 && (
+        <Section label="What to order" title="Recommended dishes">
+          <Grid>{dishes.slice(0, 3).map((d) => <DishCard key={d.id} d={d} />)}</Grid>
+        </Section>
+      )}
+      {dishes.length > 0 && (
+        <Section label="Cook it yourself" title="Recipes to try at home">
+          <Grid>{dishes.slice(3, 6).length >= 3 ? dishes.slice(3, 6).map((d) => <RecipeCard key={d.id} d={d} />) : dishes.slice(0, 3).map((d) => <RecipeCard key={d.id} d={d} />)}</Grid>
+        </Section>
+      )}
+      {stories.length > 0 && (
+        <Section label="Read" title="Stories"><Grid>{stories.map((s) => <StoryResultCard key={s.id} s={s} />)}</Grid></Section>
+      )}
+      {videos.length > 0 && (
+        <Section label="Watch" title="Videos"><Grid>{videos.map((v) => <VideoCard key={v.id} v={v} />)}</Grid></Section>
+      )}
+
+      {/* Related experiences */}
+      <Section label="Keep exploring" title="Related experiences">
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          {meta.related.map((rel) => (
+            <button key={rel} onClick={() => go("experience", rel)}
+              style={{ display: "inline-flex", alignItems: "center", gap: "8px", height: "46px", padding: "0 22px", borderRadius: "999px", fontSize: "15px", fontWeight: 600, color: "var(--text)", background: "var(--card)", boxShadow: "inset 0 0 0 1px var(--border)", transition: "all 200ms ease" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "inset 0 0 0 1.5px var(--red)"; (e.currentTarget as HTMLElement).style.color = "var(--red)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "inset 0 0 0 1px var(--border)"; (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}>
+              {rel}<Icon name="arrow-right" size={16} />
+            </button>
+          ))}
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+/* ── About page ─────────────────────────────────────────────────── */
+const TEAM = [
+  { name: "Alessia Bruno", role: "Editor-in-Chief", note: "Former food-desk editor who has eaten her way through all twenty regions." },
+  { name: "Marco Deluca", role: "Head of Video", note: "Documents Italy's kitchens one slow pan of simmering ragù at a time." },
+  { name: "Chiara Fontana", role: "Restaurant Editor", note: "Keeps the reviews honest and the reservations impossible to get." },
+  { name: "Tommaso Ricci", role: "Recipe Editor", note: "Tests every recipe three times — once with his nonna watching." },
+];
+export function AboutPage() {
+  const go = useGo();
+  return (
+    <div>
+      <Container style={{ maxWidth: "860px", paddingTop: "72px", paddingBottom: "8px", textAlign: "center" }}>
+        <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "14px" }}>About CIBISWEB</div>
+        <h1 style={{ fontSize: "54px", fontWeight: 600, letterSpacing: "-0.035em", lineHeight: 1.05, color: "var(--text)", marginBottom: "20px" }}>
+          Italy, explained through <span style={{ color: "var(--red)" }}>food</span>
+        </h1>
+        <p style={{ fontSize: "19px", color: "var(--text-2)", lineHeight: 1.65, maxWidth: "620px", margin: "0 auto" }}>
+          CIBISWEB is a digital food ecosystem — a place where restaurants, dishes, recipes, stories and cities connect into one map of Italian culinary culture.
+        </p>
+      </Container>
+      <Section label="Mission" title="What drives us">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
+          {[
+            { icon: "utensils", title: "Mission", text: "Make Italy's food culture discoverable — every dish, every story, every table — with the depth it deserves." },
+            { icon: "sparkles", title: "Vision", text: "Become the way the world explores Italian food: not a directory, but a living atlas of taste." },
+            { icon: "heart", title: "Values", text: "Authenticity over hype, regions over clichés, and respect for the people who cook." },
+          ].map((b) => (
+            <div key={b.title} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "30px 32px", boxShadow: "var(--shadow-sm)" }}>
+              <span style={{ width: "46px", height: "46px", borderRadius: "13px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "18px" }}>
+                <Icon name={b.icon} size={21} color="var(--red)" />
+              </span>
+              <div style={{ fontSize: "19px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--text)", marginBottom: "8px" }}>{b.title}</div>
+              <p style={{ fontSize: "15px", color: "var(--text-2)", lineHeight: 1.65 }}>{b.text}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+      <Section label="Editorial team" title="The people behind the plates">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "24px" }}>
+          {TEAM.map((t, i) => (
+            <div key={t.name} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "26px 28px", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: ["#FBE9EA", "#FCEFD6", "#E3F0E4", "#F5F3EE"][i % 4], display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: 700, color: "var(--text)", marginBottom: "16px" }}>
+                {t.name.split(" ").map((w) => w[0]).join("")}
+              </div>
+              <div style={{ fontSize: "17px", fontWeight: 600, color: "var(--text)" }}>{t.name}</div>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--red)", marginBottom: "10px" }}>{t.role}</div>
+              <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6 }}>{t.note}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+      <Section label="Join the journey" title="Start exploring">
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <Btn variant="primary" size="lg" iconRight="arrow-right" onClick={() => go("restaurants")}>Browse restaurants</Btn>
+          <Btn variant="outline" size="lg" onClick={() => go("stories", "All")}>Read our stories</Btn>
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+/* ── Contact page ───────────────────────────────────────────────── */
+export function ContactPage() {
+  const [sent, setSent] = useState(false);
+  return (
+    <div>
+      <Container style={{ maxWidth: "860px", paddingTop: "72px", paddingBottom: "8px", textAlign: "center" }}>
+        <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "14px" }}>Contact</div>
+        <h1 style={{ fontSize: "54px", fontWeight: 600, letterSpacing: "-0.035em", lineHeight: 1.05, color: "var(--text)", marginBottom: "20px" }}>Say <span style={{ color: "var(--red)" }}>ciao</span></h1>
+        <p style={{ fontSize: "19px", color: "var(--text-2)", lineHeight: 1.65, maxWidth: "560px", margin: "0 auto" }}>
+          A restaurant to suggest, a story to pitch, or a correction from a proud nonna — we read everything.
+        </p>
+      </Container>
+      <Section label="Write to us" title="Get in touch">
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "24px", alignItems: "start" }}>
+          {/* Form */}
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "32px 34px", boxShadow: "var(--shadow-sm)" }}>
+            {!sent ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: "200px", display: "flex", alignItems: "center", gap: "10px", background: "var(--bg)", borderRadius: "14px", border: "1px solid var(--border)", padding: "0 16px", height: "52px" }}>
+                    <Icon name="user" size={17} color="var(--text-2)" />
+                    <input placeholder="Your name" aria-label="Your name" style={{ flex: 1, fontSize: "15px", color: "var(--text)" }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: "200px", display: "flex", alignItems: "center", gap: "10px", background: "var(--bg)", borderRadius: "14px", border: "1px solid var(--border)", padding: "0 16px", height: "52px" }}>
+                    <Icon name="mail" size={17} color="var(--text-2)" />
+                    <input type="email" placeholder="Email address" aria-label="Email address" style={{ flex: 1, fontSize: "15px", color: "var(--text)" }} />
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: "10px", background: "var(--bg)", borderRadius: "14px", border: "1px solid var(--border)", padding: "14px 16px" }}>
+                  <Icon name="book-open" size={17} color="var(--text-2)" style={{ marginTop: "2px" }} />
+                  <textarea placeholder="Your message…" aria-label="Your message" rows={5} style={{ flex: 1, fontSize: "15px", color: "var(--text)", background: "none", border: "none", outline: "none", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }} />
+                </div>
+                <div><Btn variant="primary" size="lg" iconRight="arrow-right" onClick={() => setSent(true)}>Send message</Btn></div>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "26px 10px" }}>
+                <span style={{ display: "inline-flex", width: "62px", height: "62px", borderRadius: "50%", background: "#E3F0E4", alignItems: "center", justifyContent: "center", marginBottom: "18px" }}>
+                  <Icon name="check-circle" size={30} color="var(--success)" />
+                </span>
+                <h3 style={{ fontSize: "22px", fontWeight: 600, color: "var(--text)", marginBottom: "8px" }}>Message sent!</h3>
+                <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6 }}>Grazie — the editorial desk will get back to you within two working days.</p>
+              </div>
+            )}
+          </div>
+          {/* Info */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {[
+              { icon: "map-pin", title: "Location", lines: ["Via del Gusto 12", "20121 Milano, Italy"] },
+              { icon: "mail", title: "Email", lines: ["ciao@cibisweb.it", "press@cibisweb.it"] },
+              { icon: "phone", title: "Phone", lines: ["+39 02 0000 0000", "Mon–Fri, 9:00–18:00 CET"] },
+            ].map((c) => (
+              <div key={c.title} style={{ display: "flex", gap: "16px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "18px", padding: "20px 22px" }}>
+                <span style={{ width: "42px", height: "42px", borderRadius: "12px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon name={c.icon} size={19} color="var(--red)" />
+                </span>
+                <div>
+                  <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)", marginBottom: "3px" }}>{c.title}</div>
+                  {c.lines.map((l) => <div key={l} style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.55 }}>{l}</div>)}
+                </div>
+              </div>
+            ))}
+            <div style={{ display: "flex", gap: "10px" }}>
+              {["instagram", "facebook", "twitter", "youtube"].map((s) => (
+                <a key={s} href="#" aria-label={s}
+                  style={{ width: "44px", height: "44px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--card)", color: "var(--text)", border: "1px solid var(--border)", transition: "all 200ms ease" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--red)"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--card)"; (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}>
+                  <Icon name={s} size={18} />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Section>
+    </div>
+  );
 }
