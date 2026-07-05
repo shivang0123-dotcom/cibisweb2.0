@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Icon } from "./icons";
-import { Container, SectionLabel, Btn, useGo } from "./ui";
+import { Container, SectionLabel, useGo } from "./ui";
 import { CITIES, CITY_MAP_POS, cityById, cityExtra } from "./data";
 import { cityRestaurants, cityDishes, cityStories, cityVideos } from "./search-utils";
 import { useI18n } from "./i18n";
@@ -23,8 +23,6 @@ const METRICS: { key: MetricKey; label: string; icon: string; count: (id: string
   { key: "videos", label: "Videos", icon: "play", count: (id) => cityVideos(id).length },
   { key: "festivals", label: "Festivals", icon: "party-popper", count: (id) => cityExtra(id).festivals.length },
 ];
-const metricByKey = (k: MetricKey) => METRICS.find((m) => m.key === k)!;
-
 function CityPin({ id, active, emphasis, onEnter, onClick, label }: { id: string; active: boolean; emphasis: number; onEnter: () => void; onClick: () => void; label: string }) {
   const [h, setH] = useState(false);
   const pos = CITY_MAP_POS[id];
@@ -60,55 +58,79 @@ function CityPin({ id, active, emphasis, onEnter, onClick, label }: { id: string
   );
 }
 
+const GLANCE = [
+  { value: "20", label: "Regions" },
+  { value: "350+", label: "Cities" },
+  { value: "2,000+", label: "Restaurants" },
+  { value: "5,000+", label: "Dishes" },
+];
+
 export function MapSection() {
   const go = useGo();
-  const { l, cityBlurb } = useI18n();
+  const { l } = useI18n();
   const [activeId, setActiveId] = useState("rome");
-  const [metric, setMetric] = useState<MetricKey>("restaurants");
+  const [enabled, setEnabled] = useState<Set<MetricKey>>(() => new Set(METRICS.map((m) => m.key)));
   const city = cityById(activeId)!;
 
-  const maxForMetric = useMemo(() => {
-    const m = metricByKey(metric);
-    return Math.max(1, ...CITIES.map((c) => m.count(c.id)));
-  }, [metric]);
-
-  // Stats shown in the preview: the active metric first, then the essentials.
-  const previewMetrics = useMemo(() => {
-    const base: MetricKey[] = ["restaurants", "dishes", "stories"];
-    const ordered = [metric, ...base.filter((k) => k !== metric)];
-    return [...new Set(ordered)].slice(0, 3).map(metricByKey);
-  }, [metric]);
+  const score = (id: string) => METRICS.filter((m) => enabled.has(m.key)).reduce((s, m) => s + m.count(id), 0);
+  const maxScore = useMemo(() => Math.max(1, ...CITIES.map((c) => score(c.id))), [enabled]); // eslint-disable-line react-hooks/exhaustive-deps
+  const toggle = (k: MetricKey) => setEnabled((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const shownMetrics = METRICS.filter((m) => enabled.has(m.key));
 
   return (
     <section style={{ padding: "56px 0" }}>
       <Container style={{ maxWidth: "1320px" }}>
-        <div className="reveal" style={{ marginBottom: "28px", maxWidth: "640px" }}>
-          <SectionLabel>{l("The Map")}</SectionLabel>
-          <h2 style={{ fontSize: "40px", fontWeight: 600, letterSpacing: "-0.025em", color: "var(--text)", lineHeight: 1.1, marginBottom: "16px" }}>{l("Explore Italy Through Food")}</h2>
-          <p style={{ fontSize: "17px", color: "var(--text-2)", lineHeight: 1.6 }}>
-            {l("Every region tells a different culinary story. Discover restaurants, signature dishes, local traditions and food culture across Italy.")}
-          </p>
-        </div>
+        <div className="reveal" style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: "36px", alignItems: "start" }}>
+          {/* ── Sidebar ── */}
+          <div>
+            <SectionLabel>{l("The Map")}</SectionLabel>
+            <h2 style={{ fontSize: "36px", fontWeight: 600, letterSpacing: "-0.025em", color: "var(--text)", lineHeight: 1.1, marginBottom: "14px" }}>{l("Explore Italy Through Food")}</h2>
+            <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "26px" }}>
+              {l("Every region tells a different culinary story. Discover restaurants, signature dishes, local traditions and food culture across Italy.")}
+            </p>
 
-        {/* Filters — update the map markers smoothly */}
-        <div className="reveal" style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
-          {METRICS.map((m) => {
-            const on = metric === m.key;
-            return (
-              <button key={m.key} onClick={() => setMetric(m.key)}
-                style={{ display: "inline-flex", alignItems: "center", gap: "7px", height: "38px", padding: "0 16px", borderRadius: "999px", fontSize: "13px", fontWeight: 600, color: on ? "#fff" : "var(--text)", background: on ? "var(--red)" : "var(--card)", boxShadow: on ? "none" : "inset 0 0 0 1px var(--border)", transition: "all 200ms ease" }}>
-                <Icon name={m.icon} size={15} color={on ? "#fff" : "var(--text-2)"} />{l(m.label)}
-              </button>
-            );
-          })}
-        </div>
+            {/* Show on map */}
+            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "18px", boxShadow: "var(--shadow-sm)", padding: "18px 20px", marginBottom: "18px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)", marginBottom: "14px" }}>{l("Show on map")}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                {METRICS.map((m) => {
+                  const on = enabled.has(m.key);
+                  return (
+                    <button key={m.key} onClick={() => toggle(m.key)} aria-pressed={on}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "9px 10px", borderRadius: "11px", textAlign: "left", transition: "background 160ms ease" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#FCFBF8"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "11px", fontSize: "15px", fontWeight: 500, color: "var(--text)" }}>
+                        <Icon name={m.icon} size={17} color={on ? "var(--red)" : "var(--text-2)"} />{l(m.label)}
+                      </span>
+                      <span style={{ width: "22px", height: "22px", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", background: on ? "var(--red)" : "transparent", boxShadow: on ? "none" : "inset 0 0 0 1.5px var(--border)", transition: "all 160ms ease" }}>
+                        {on && <Icon name="check-circle" size={14} color="#fff" />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-        <div className="reveal" style={{ background: "var(--card)", borderRadius: "24px", border: "1px solid var(--border)", boxShadow: "var(--shadow)", overflow: "hidden", display: "grid", gridTemplateColumns: "1.15fr 0.85fr" }}>
-          {/* Map */}
-          <div style={{ position: "relative", padding: "28px 20px", background: "linear-gradient(160deg, #FCFBF8 0%, #F7F5F0 100%)", borderRight: "1px solid var(--border)" }}>
-            <div style={{ position: "relative", width: "100%", maxWidth: "440px", margin: "0 auto", aspectRatio: "400 / 520" }}>
+            {/* Italy at a Glance */}
+            <div style={{ background: "var(--text)", borderRadius: "18px", padding: "22px 24px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", marginBottom: "16px" }}>{l("Italy at a Glance")}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }}>
+                {GLANCE.map((g) => (
+                  <div key={g.label}>
+                    <div style={{ fontSize: "22px", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}>{g.value}</div>
+                    <div style={{ fontSize: "11px", fontWeight: 500, color: "rgba(255,255,255,0.6)" }}>{l(g.label)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Map ── */}
+          <div style={{ position: "relative", background: "linear-gradient(160deg, #FCFBF8 0%, #F5F1E9 100%)", border: "1px solid var(--border)", borderRadius: "24px", boxShadow: "var(--shadow)", overflow: "hidden", minHeight: "560px", padding: "24px" }}>
+            <div style={{ position: "relative", width: "100%", maxWidth: "430px", margin: "0 auto", aspectRatio: "400 / 520" }}>
               <svg viewBox="0 0 400 520" width="100%" height="100%" style={{ display: "block", overflow: "visible" }}>
-                <g fill="#F0E9DD" stroke="#E2DCCE" strokeWidth="1.5" strokeLinejoin="round">
+                <g fill="#EFE7DA" stroke="#E1DBCC" strokeWidth="1.5" strokeLinejoin="round">
                   <path d={ITALY_MAINLAND} />
                   <path d={ITALY_SICILY} />
                   <path d={ITALY_SARDINIA} />
@@ -116,57 +138,37 @@ export function MapSection() {
               </svg>
               {CITIES.map((c) => (
                 <CityPin key={c.id} id={c.id} label={l(c.name)} active={activeId === c.id}
-                  emphasis={metricByKey(metric).count(c.id) / maxForMetric}
+                  emphasis={score(c.id) / maxScore}
                   onEnter={() => setActiveId(c.id)} onClick={() => go("city", c.name)} />
               ))}
             </div>
-          </div>
 
-          {/* Active city preview card */}
-          <div style={{ padding: "30px 34px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <div key={city.id} style={{ animation: "acc-in 300ms cubic-bezier(.16,1,.3,1)" }}>
-              <div style={{ borderRadius: "18px", overflow: "hidden", height: "160px", marginBottom: "18px", position: "relative" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={city.image} alt={city.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(17,17,17,0.55), rgba(17,17,17,0) 55%)" }} />
-                <div style={{ position: "absolute", left: "16px", bottom: "12px" }}>
-                  <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>{l(city.region)}</div>
-                  <div style={{ fontSize: "26px", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}>{l(city.name)}</div>
-                </div>
-              </div>
-
-              {/* Signature dish */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                <span style={{ width: "34px", height: "34px", borderRadius: "10px", background: "#FBE9EA", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon name="utensils" size={16} color="var(--red)" />
+            {/* Floating city popover */}
+            <div key={city.id} style={{ position: "absolute", left: "22px", bottom: "22px", width: "300px", maxWidth: "calc(100% - 44px)", background: "var(--card)", borderRadius: "18px", border: "1px solid var(--border)", boxShadow: "var(--shadow-float)", overflow: "hidden", animation: "acc-in 260ms cubic-bezier(.16,1,.3,1)" }}>
+              <div style={{ display: "flex", gap: "12px", padding: "12px" }}>
+                <span style={{ width: "58px", height: "58px", borderRadius: "12px", overflow: "hidden", flexShrink: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={city.image} alt={city.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </span>
-                <div>
-                  <div style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-2)" }}>{l("Signature dish")}</div>
-                  <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>{city.famous[0]}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: "17px", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.1 }}>{l(city.name)}</div>
+                  <div style={{ fontSize: "12px", color: "var(--text-2)", marginBottom: "5px" }}>{l(city.region)}</div>
+                  <div style={{ fontSize: "12px", color: "var(--text-2)", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    <span style={{ fontWeight: 600, color: "var(--text)" }}>{l("Famous for")}: </span>{city.famous.slice(0, 2).join(", ")}
+                  </div>
                 </div>
               </div>
-
-              {/* Stats — active filter highlighted */}
-              <div style={{ display: "flex", gap: "22px", marginBottom: "22px", flexWrap: "wrap" }}>
-                {previewMetrics.map((m) => {
-                  const on = m.key === metric;
-                  return (
-                    <div key={m.key} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Icon name={m.icon} size={16} color={on ? "var(--red)" : "var(--text-2)"} />
-                      <span style={{ fontSize: "14px", fontWeight: 600, color: on ? "var(--red)" : "var(--text)" }}>
-                        {m.count(city.id)} <span style={{ fontWeight: 500, color: "var(--text-2)" }}>{l(m.label).toLowerCase()}</span>
-                      </span>
-                    </div>
-                  );
-                })}
+              <div style={{ display: "flex", gap: "14px", padding: "0 14px 10px", flexWrap: "wrap" }}>
+                {shownMetrics.slice(0, 3).map((m) => (
+                  <span key={m.key} style={{ fontSize: "13px", fontWeight: 600, color: "var(--red)" }}>
+                    {m.count(city.id)} <span style={{ fontWeight: 500, color: "var(--text-2)" }}>{l(m.label).toLowerCase()}</span>
+                  </span>
+                ))}
               </div>
-
-              <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "20px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{cityBlurb(city)}</p>
-
-              <Btn variant="primary" size="md" iconRight="arrow-right" onClick={() => go("city", city.name)}>{l("Explore")} {l(city.name)}</Btn>
-              <div style={{ fontSize: "12px", color: "var(--text-2)", marginTop: "16px", display: "flex", alignItems: "center", gap: "7px" }}>
-                <Icon name="map-pin" size={13} color="var(--text-2)" />{l("Hover a city to explore")}
-              </div>
+              <button onClick={() => go("city", city.name)}
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", height: "42px", background: "var(--red)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>
+                {l("Explore")} {l(city.name)} <Icon name="arrow-right" size={15} color="#fff" />
+              </button>
             </div>
           </div>
         </div>

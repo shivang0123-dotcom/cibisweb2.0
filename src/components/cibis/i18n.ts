@@ -57,6 +57,16 @@ const UI: Record<string, string> = {
   "Back to homepage": "Torna alla home", "Clear All": "Cancella tutto", "Clear filters": "Cancella filtri",
   "Surprise Me": "Sorprendimi", "Explore Dish": "Scopri il Piatto", "View Dish": "Vedi Piatto", Reserve: "Prenota",
   "Signature dish": "Piatto simbolo", stories: "storie",
+  // Featured dish card
+  reviews: "recensioni", "Chef's Choice": "Scelta dello Chef", Popular: "Popolare", Traditional: "Tradizionale",
+  Price: "Prezzo", "Prep Time": "Preparazione", Contains: "Contiene",
+  Nutrition: "Valori", "Where to Try": "Dove Provarlo", "Served in": "Servito in", "View Restaurants": "Vedi Ristoranti",
+  Share: "Condividi", "Back to Menu": "Torna al Menu",
+  // Map sidebar
+  "Show on map": "Mostra sulla mappa", "Italy at a Glance": "L'Italia in Breve",
+  Regions: "Regioni", "Top Experiences": "Migliori Esperienze", "Explore All in": "Esplora tutto a",
+  "Try Authentic {city} Dishes": "Prova i Piatti Autentici", "Explore Local Street Food": "Esplora lo Street Food Locale",
+  "Historic Restaurants to Visit": "Ristoranti Storici da Visitare", "Food Markets & Local Flavours": "Mercati e Sapori Locali",
   "View Recipe": "Vedi Ricetta", "Where to eat": "Dove mangiarlo", Story: "Storia", Recipe: "Ricetta",
   "Reserve a table": "Prenota un tavolo", "Confirm reservation": "Conferma prenotazione",
   Done: "Fatto", Watch: "Guarda", Discover: "Scopri", Overview: "Panoramica", About: "Chi siamo",

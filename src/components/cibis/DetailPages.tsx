@@ -13,7 +13,7 @@ import {
 import {
   servedCount, restaurantsServing, relatedDishes, dishStories, dishVideos,
   cityRestaurants, cityDishes, cityStories, cityVideos,
-  similarRestaurants, experienceContent, restaurantMenu, nearbyCities,
+  similarRestaurants, experienceContent, restaurantMenu, nearbyCities, dishPrice,
 } from "./search-utils";
 import { useI18n, useL } from "./i18n";
 
@@ -51,160 +51,205 @@ function Breadcrumb({ trail }: { trail: { label: string; go?: () => void }[] }) 
   );
 }
 
-/* ── Dish page ──────────────────────────────────────────────────── */
+/* Small image tile used for a city's Top Experiences */
+function ExperienceTile({ title, sub, img, on }: { title: string; sub: string; img: string; on: () => void }) {
+  const [h, setH] = useState(false);
+  return (
+    <button onClick={on} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      style={{ textAlign: "left", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "18px", overflow: "hidden", boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none", transition: "transform 240ms ease, box-shadow 240ms ease" }}>
+      <div style={{ position: "relative", height: "140px", overflow: "hidden" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={img} alt={title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.05)" : "scale(1)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(17,17,17,0.35), transparent 60%)" }} />
+      </div>
+      <div style={{ padding: "16px 18px" }}>
+        <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)", marginBottom: "4px" }}>{title}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</span>
+          <span style={{ display: "inline-flex", transform: h ? "translateX(2px)" : "none", transition: "transform 200ms ease" }}><Icon name="arrow-right" size={15} color="var(--red)" /></span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ── Dish page — Featured Mode (tabbed detail card) ─────────────── */
+const DISH_TABS = ["Story", "Ingredients", "Recipe", "Nutrition", "Pairing", "Where to Try"] as const;
+type DishTab = (typeof DISH_TABS)[number];
+
 export function DishPage({ query }: { query: string }) {
   const go = useGo();
   const { l, dishDesc, dishHistory, dishFunFacts, dishSteps, dishIngredients, wineNote } = useI18n();
   const dish = dishByName(query) || DISHES.find((d) => d.name.toLowerCase().includes(query.toLowerCase())) || DISHES[0];
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, active: false });
+  const [tab, setTab] = useState<DishTab>("Story");
+  const [fav, setFav] = useState(false);
   const city = cityById(dish.cityId);
   const rests = restaurantsServing(dish), stories = dishStories(dish), vids = dishVideos(dish), related = relatedDishes(dish);
+  const served = servedCount(dish);
+  const reviews = 200 + ((dish.name.length * 89 + Math.round(dish.rating * 100)) % 1800);
+  const price = dishPrice(dish, 3);
 
   const onMove = (e: React.MouseEvent) => {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setTilt({ rx: -((e.clientY - r.top) / r.height - 0.5) * 12, ry: ((e.clientX - r.left) / r.width - 0.5) * 16, active: true });
+    setTilt({ rx: -((e.clientY - r.top) / r.height - 0.5) * 10, ry: ((e.clientX - r.left) / r.width - 0.5) * 14, active: true });
+  };
+
+  const pill = (icon: string, value: string, label: string) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "3px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "16px", padding: "14px 16px" }}>
+      <Icon name={icon} size={16} color="var(--red)" />
+      <div style={{ fontSize: "17px", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--text)", marginTop: "4px" }}>{value}</div>
+      <div style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.04em", color: "var(--text-2)" }}>{label}</div>
+    </div>
+  );
+
+  const tabBody = () => {
+    if (tab === "Story") return <p style={{ fontSize: "15px", color: "var(--text-2)", lineHeight: 1.7 }}>{dishHistory(dish)}</p>;
+    if (tab === "Ingredients") return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        {dishIngredients(dish).map((ing) => (
+          <span key={ing} style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 500, color: "var(--text)", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "999px", padding: "7px 13px" }}>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--red)" }} />{ing}
+          </span>
+        ))}
+      </div>
+    );
+    if (tab === "Recipe") return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        {dishSteps(dish).map((step, i) => (
+          <div key={i} style={{ display: "flex", gap: "13px" }}>
+            <span style={{ width: "26px", height: "26px", borderRadius: "50%", background: "#FBE9EA", color: "var(--red)", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
+            <span style={{ fontSize: "14px", color: "var(--text)", lineHeight: 1.55, paddingTop: "2px" }}>{step}</span>
+          </div>
+        ))}
+      </div>
+    );
+    if (tab === "Nutrition") return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", maxWidth: "440px" }}>
+        {([["Calories", dish.nutrition.calories, "kcal"], ["Protein", dish.nutrition.protein, "g"], ["Carbs", dish.nutrition.carbs, "g"], ["Fat", dish.nutrition.fat, "g"], ["Fiber", dish.nutrition.fiber, "g"], ["Sugar", dish.nutrition.sugar, "g"]] as [string, number, string][]).map(([lab, v, u]) => (
+          <div key={lab}><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text)" }}>{v}<span style={{ fontSize: "12px", color: "var(--text-2)" }}> {u}</span></div><div style={{ fontSize: "12px", color: "var(--text-2)" }}>{l(lab)}</div></div>
+        ))}
+      </div>
+    );
+    if (tab === "Pairing") return (
+      <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+        <span style={{ width: "50px", height: "50px", borderRadius: "14px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="wine" size={22} color="var(--red)" /></span>
+        <div>
+          <div style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--red)" }}>{dish.wine.type === "None" ? l("No pairing") : `${l(dish.wine.type)} ${l("wine")}`}</div>
+          <div style={{ fontSize: "18px", fontWeight: 600, color: "var(--text)", margin: "2px 0 5px" }}>{dish.wine.name}</div>
+          <div style={{ fontSize: "13px", color: "var(--text-2)", lineHeight: 1.5, maxWidth: "420px" }}>{wineNote(dish)}</div>
+        </div>
+      </div>
+    );
+    // Where to Try
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {rests.slice(0, 4).map((r) => (
+          <button key={r.id} onClick={() => go("restaurant", r.name)} style={{ display: "flex", alignItems: "center", gap: "12px", textAlign: "left" }}>
+            <span style={{ width: "40px", height: "40px", borderRadius: "11px", overflow: "hidden", flexShrink: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={r.image} alt={r.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </span>
+            <span style={{ flex: 1 }}>
+              <span style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{r.name}</span>
+              <span style={{ display: "block", fontSize: "12px", color: "var(--text-2)" }}>{l(cityById(r.cityId)?.name)} · ★ {r.rating.toFixed(1)}</span>
+            </span>
+            <Icon name="arrow-up-right" size={15} color="var(--text-2)" />
+          </button>
+        ))}
+      </div>
+    );
   };
 
   return (
     <div>
-      <section style={{ padding: "40px 0 24px" }}>
-        <Container style={{ maxWidth: "1320px" }}>
-          <Breadcrumb trail={[{ label: l("Home"), go: () => go("home") }, { label: l(city?.name || "Italy"), go: () => go("city", city?.name) }, { label: dish.name }]} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "56px", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "14px" }}>{l(dish.category)}</div>
-              <h1 style={{ fontSize: "58px", fontWeight: 600, letterSpacing: "-0.035em", lineHeight: 1.02, color: "var(--text)", marginBottom: "18px" }}>{dish.name}</h1>
-              <p style={{ fontSize: "18px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "26px", maxWidth: "460px" }}>{dishDesc(dish)}</p>
-              <div style={{ display: "flex", alignItems: "center", gap: "22px", flexWrap: "wrap", marginBottom: "18px" }}>
+      <Container style={{ maxWidth: "1320px", paddingTop: "36px", paddingBottom: "8px" }}>
+        <Breadcrumb trail={[{ label: l("Home"), go: () => go("home") }, { label: l(city?.name || "Italy"), go: () => go("city", city?.name) }, { label: dish.name }]} />
+
+        {/* Featured card */}
+        <div style={{ position: "relative", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "28px", boxShadow: "var(--shadow)", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: "22px", right: "24px", display: "flex", gap: "10px", zIndex: 4 }}>
+            <button aria-label={l("Share")} style={{ display: "inline-flex", alignItems: "center", gap: "7px", height: "38px", padding: "0 14px", borderRadius: "12px", background: "var(--bg)", border: "1px solid var(--border)", fontSize: "13px", fontWeight: 600, color: "var(--text)" }}><Icon name="arrow-up-right" size={15} color="var(--text-2)" />{l("Share")}</button>
+            <button aria-label="Save" onClick={() => setFav((f) => !f)} style={{ width: "38px", height: "38px", borderRadius: "12px", background: "var(--bg)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon name="heart" size={18} color={fav ? "var(--red)" : "var(--text-2)"} className={fav ? "fill-current" : ""} />
+            </button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1.02fr 0.98fr" }}>
+            {/* Left */}
+            <div style={{ padding: "44px 46px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "10px" }}>{l(dish.category)}</div>
+              <h1 style={{ fontSize: "44px", fontWeight: 600, letterSpacing: "-0.03em", lineHeight: 1.05, color: "var(--text)", marginBottom: "6px" }}>{dish.name}</h1>
+              <div style={{ fontSize: "15px", color: "var(--text-2)", marginBottom: "16px" }}>{l(dish.category)} · {l(city?.region)}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
                 <Stars rating={dish.rating} />
-                <Meta icon="store" text={`${servedCount(dish)} ${l("restaurants")}`} />
-                <Meta icon="map-pin" text={l(city?.name || "")} />
-                {dish.vegetarian && <Meta icon="leaf" text={l("Vegetarian")} />}
+                <span style={{ fontSize: "14px", color: "var(--text-2)" }}>({reviews.toLocaleString()} {l("reviews")})</span>
               </div>
-              {/* Quick information strip */}
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "30px" }}>
-                {[
-                  { icon: "flame", label: l("Difficulty"), value: l(dish.difficulty) },
-                  { icon: "timer", label: l("Prep"), value: `${dish.prepMinutes} ${l("min")}` },
-                  { icon: "clock", label: l("Cook"), value: `${dish.cookMinutes} ${l("min")}` },
-                  { icon: "users", label: l("Serves"), value: String(dish.servings) },
-                ].map((q) => (
-                  <div key={q.label} style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "14px", padding: "10px 16px" }}>
-                    <Icon name={q.icon} size={17} color="var(--red)" />
-                    <div>
-                      <div style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)" }}>{q.label}</div>
-                      <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{q.value}</div>
-                    </div>
-                  </div>
-                ))}
+              <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--red)", background: "#FBE9EA", borderRadius: "999px", padding: "6px 12px" }}><Icon name="chef-hat" size={13} color="var(--red)" />{dish.rating >= 4.7 ? l("Chef's Choice") : l("Traditional")}</span>
+                {served > 55 && <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--star)", background: "#FCEFD6", borderRadius: "999px", padding: "6px 12px" }}><Icon name="trending-up" size={13} color="var(--star)" />{l("Popular")}</span>}
+                {dish.vegetarian && <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--success)", background: "#E3F0E4", borderRadius: "999px", padding: "6px 12px" }}><Icon name="leaf" size={13} color="var(--success)" />{l("Vegetarian")}</span>}
               </div>
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <Btn variant="primary" size="lg" iconRight="arrow-right" onClick={() => document.getElementById("recipe")?.scrollIntoView({ behavior: "smooth" })}>{l("View Recipe")}</Btn>
-                <Btn variant="outline" size="lg" onClick={() => document.getElementById("serving")?.scrollIntoView({ behavior: "smooth" })}>{l("Where to eat")}</Btn>
+              <p style={{ fontSize: "15px", color: "var(--text-2)", lineHeight: 1.65, marginBottom: "24px" }}>{dishDesc(dish)}</p>
+
+              {/* Quick info pills */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px", marginBottom: "28px" }}>
+                {pill("gem", `€${price}`, l("Price"))}
+                {pill("timer", `${dish.prepMinutes} ${l("min")}`, l("Prep Time"))}
+                {pill("flame", `${dish.nutrition.calories}`, l("Calories"))}
+                {pill("alert-triangle", dish.allergens.length ? dish.allergens.slice(0, 2).map((a) => l(a)).join(", ") : l("None"), l("Contains"))}
               </div>
+
+              {/* Tabs */}
+              <div style={{ display: "flex", gap: "22px", borderBottom: "1px solid var(--border)", marginBottom: "20px", overflowX: "auto" }}>
+                {DISH_TABS.map((t) => {
+                  const on = tab === t;
+                  return (
+                    <button key={t} onClick={() => setTab(t)}
+                      style={{ position: "relative", padding: "0 0 12px", fontSize: "14px", fontWeight: 600, whiteSpace: "nowrap", color: on ? "var(--red)" : "var(--text-2)", transition: "color 180ms ease" }}>
+                      {l(t)}
+                      <span style={{ position: "absolute", left: 0, right: 0, bottom: "-1px", height: "2px", background: "var(--red)", borderRadius: "2px", transform: on ? "scaleX(1)" : "scaleX(0)", transition: "transform 220ms ease" }} />
+                    </button>
+                  );
+                })}
+              </div>
+              <div key={tab} style={{ minHeight: "150px", animation: "acc-in 260ms cubic-bezier(.16,1,.3,1)" }}>{tabBody()}</div>
             </div>
+
+            {/* Right — big plated dish */}
             <div onMouseMove={onMove} onMouseLeave={() => setTilt({ rx: 0, ry: 0, active: false })}
-              style={{ perspective: "1100px", display: "flex", justifyContent: "center" }}>
-              <div style={{ position: "relative", width: "440px", height: "440px", transformStyle: "preserve-3d", transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`, transition: tilt.active ? "transform 120ms ease-out" : "transform 500ms cubic-bezier(.2,.8,.2,1)", animation: "floaty 6s ease-in-out infinite" }}>
-                <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "radial-gradient(circle at 50% 46%, #F3ECE0 0%, rgba(243,236,224,0) 68%)", transform: "translateZ(-80px) scale(1.05)" }} />
+              style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: "30px", background: "radial-gradient(circle at 55% 42%, #FCFBF8 0%, #F1ECE3 100%)", perspective: "1100px" }}>
+              <div style={{ position: "relative", width: "88%", maxWidth: "420px", aspectRatio: "1", transformStyle: "preserve-3d", transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`, transition: tilt.active ? "transform 120ms ease-out" : "transform 500ms cubic-bezier(.2,.8,.2,1)", animation: "floaty 6s ease-in-out infinite" }}>
+                <div style={{ position: "absolute", left: "50%", bottom: "6%", width: "70%", height: "10%", transform: "translateX(-50%) translateZ(-40px)", background: "rgba(17,17,17,0.22)", filter: "blur(26px)", borderRadius: "50%" }} />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={dish.image} alt={dish.name} style={{ position: "absolute", inset: "6%", width: "88%", height: "88%", objectFit: "cover", borderRadius: "50%", boxShadow: "var(--shadow-float)", transform: "translateZ(0)" }} />
-                <div style={{ position: "absolute", top: "0", right: "0", background: "var(--card)", borderRadius: "16px", boxShadow: "var(--shadow-lg)", padding: "12px 16px", transform: "translateZ(80px)", display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span style={{ width: "34px", height: "34px", borderRadius: "10px", background: "#FCEFD6", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="star" size={17} color="var(--star)" className="rating-star" /></span>
-                  <div><div style={{ fontSize: "15px", fontWeight: 600 }}>{dish.rating.toFixed(1)}</div><div style={{ fontSize: "12px", color: "var(--text-2)" }}>{l("rating")}</div></div>
-                </div>
+                <img src={dish.image} alt={dish.name} loading="eager" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%", border: "8px solid #fff", boxShadow: "var(--shadow-float)", transform: "translateZ(0)" }} />
               </div>
             </div>
           </div>
-        </Container>
-      </section>
 
-      {stories.length > 0 && <Section label="Story" title={`${l("Stories about")} ${dish.name}`}><Grid>{stories.map((s) => <StoryResultCard key={s.id} s={s} />)}</Grid></Section>}
-
-      <Section label="History" title="Where it comes from">
-        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "36px 40px", maxWidth: "820px" }}>
-          <p style={{ fontSize: "17px", color: "var(--text-2)", lineHeight: 1.7 }}>{dishHistory(dish)}</p>
-        </div>
-      </Section>
-
-      <div id="recipe" />
-      <Section label="Recipe" title="How it's made">
-        <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.2fr", gap: "24px" }}>
-          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "28px 30px" }}>
-            <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)", marginBottom: "16px" }}>{l("Ingredients")}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {dishIngredients(dish).map((ing) => (
-                <div key={ing} style={{ display: "flex", alignItems: "center", gap: "11px", fontSize: "15px", color: "var(--text)" }}>
-                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--red)", flexShrink: 0 }} />{ing}
+          {/* Served in N restaurants */}
+          {rests.length > 0 && (
+            <div style={{ borderTop: "1px solid var(--border)", padding: "18px 46px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap", background: "#FCFBF8" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ display: "flex" }}>
+                  {rests.slice(0, 5).map((r, i) => (
+                    <span key={r.id} style={{ width: "36px", height: "36px", borderRadius: "50%", overflow: "hidden", border: "2px solid var(--card)", marginLeft: i ? "-12px" : 0 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={r.image} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </span>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "28px 30px" }}>
-            <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)", marginBottom: "16px" }}>{l("Method")}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {dishSteps(dish).map((step, i) => (
-                <div key={i} style={{ display: "flex", gap: "14px" }}>
-                  <span style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#FBE9EA", color: "var(--red)", fontSize: "14px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
-                  <span style={{ fontSize: "15px", color: "var(--text)", lineHeight: 1.55, paddingTop: "3px" }}>{step}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      <Section label="Good to know" title="Nutrition & allergens">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
-          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "28px 30px" }}>
-            <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)", marginBottom: "18px" }}>{l("Per serving (approx.)")}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
-              {[
-                ["Calories", `${dish.nutrition.calories}`, "kcal"],
-                ["Protein", `${dish.nutrition.protein}`, "g"],
-                ["Carbs", `${dish.nutrition.carbs}`, "g"],
-                ["Fat", `${dish.nutrition.fat}`, "g"],
-                ["Fiber", `${dish.nutrition.fiber}`, "g"],
-                ["Sugar", `${dish.nutrition.sugar}`, "g"],
-              ].map(([label, val, unit]) => (
-                <div key={label}>
-                  <div style={{ fontSize: "22px", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text)" }}>{val}<span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-2)" }}> {unit}</span></div>
-                  <div style={{ fontSize: "12px", color: "var(--text-2)" }}>{l(label)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "28px 30px" }}>
-            <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)", marginBottom: "18px" }}>{l("Allergens")}</div>
-            {dish.allergens.length > 0 ? (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {dish.allergens.map((a) => (
-                  <span key={a} style={{ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "13px", fontWeight: 600, color: "var(--text)", background: "#FCEFD6", borderRadius: "999px", padding: "8px 14px" }}>
-                    <Icon name="alert-triangle" size={14} color="var(--star)" />{l(a)}
-                  </span>
-                ))}
+                <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{l("Served in")} {served} {l("restaurants")}</span>
               </div>
-            ) : (
-              <div style={{ fontSize: "15px", color: "var(--text-2)" }}>{l("No major allergens in the traditional recipe.")}</div>
-            )}
-            <div style={{ fontSize: "12px", color: "var(--text-2)", marginTop: "16px", lineHeight: 1.5 }}>{l("Always confirm with the kitchen — regional variations can change ingredients.")}</div>
-          </div>
+              <button onClick={() => document.getElementById("serving")?.scrollIntoView({ behavior: "smooth" })} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "14px", fontWeight: 600, color: "var(--red)" }}>
+                {l("View Restaurants")} <Icon name="arrow-right" size={15} color="var(--red)" />
+              </button>
+            </div>
+          )}
         </div>
-      </Section>
+      </Container>
 
-      <Section label="Pairing" title="What to drink">
-        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "30px 34px", display: "flex", alignItems: "center", gap: "22px", maxWidth: "720px", flexWrap: "wrap" }}>
-          <span style={{ width: "58px", height: "58px", borderRadius: "16px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Icon name="wine" size={26} color="var(--red)" />
-          </span>
-          <div style={{ flex: 1, minWidth: "240px" }}>
-            <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--red)", marginBottom: "4px" }}>{dish.wine.type === "None" ? l("No pairing") : `${l(dish.wine.type)} ${l("wine")}`}</div>
-            <div style={{ fontSize: "21px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", marginBottom: "6px" }}>{dish.wine.name}</div>
-            <div style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.55 }}>{wineNote(dish)}</div>
-          </div>
-        </div>
-      </Section>
-
+      {/* Fun facts */}
       <Section label="Did you know?" title="Fun facts">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px" }}>
           {dishFunFacts(dish).map((f, i) => (
@@ -220,13 +265,11 @@ export function DishPage({ query }: { query: string }) {
 
       <div id="serving" />
       {rests.length > 0 && <Section label="Where to eat" title="Restaurants serving it" action={<Btn variant="outline" size="sm" onClick={() => go("restaurants")}>{l("All restaurants")}</Btn>}><Grid>{rests.map((r) => <RestaurantCard key={r.id} r={r} />)}</Grid></Section>}
-      {vids.length > 0 && <Section label="Watch" title="Videos"><Grid>{vids.map((v) => <VideoCard key={v.id} v={v} />)}</Grid></Section>}
       {related.length > 0 && <Section label="Discover" title="Related dishes"><Grid>{related.map((d) => <DishCard key={d.id} d={d} />)}</Grid></Section>}
+      {vids.length > 0 && <Section label="Watch" title="Videos"><Grid>{vids.map((v) => <VideoCard key={v.id} v={v} />)}</Grid></Section>}
+      {stories.length > 0 && <Section label="Story" title={`${l("Stories about")} ${dish.name}`}><Grid>{stories.map((s) => <StoryResultCard key={s.id} s={s} />)}</Grid></Section>}
     </div>
   );
-}
-function Meta({ icon, text }: { icon: string; text: string }) {
-  return <span style={{ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "15px", fontWeight: 600, color: "var(--text)" }}><Icon name={icon} size={16} color="var(--text-2)" />{text}</span>;
 }
 
 /* ── Restaurant page ────────────────────────────────────────────── */
@@ -548,6 +591,39 @@ export function CityPage({ query }: { query: string }) {
           </Container>
         </div>
       </section>
+
+      {/* Stat pills */}
+      <Container style={{ maxWidth: "1320px", paddingTop: "8px", paddingBottom: "8px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
+          {[
+            { icon: "store", bg: "#FBE3E4", color: "var(--red)", value: rests.length, label: l("Restaurants") },
+            { icon: "utensils", bg: "#FCEFD6", color: "var(--star)", value: dishes.length, label: l("Dishes") },
+            { icon: "book-open", bg: "#E3F0E4", color: "var(--success)", value: stories.length, label: l("Stories") },
+            { icon: "play", bg: "#FBE3E4", color: "var(--red)", value: vids.length, label: l("Videos") },
+            { icon: "party-popper", bg: "#FCEFD6", color: "var(--star)", value: festivals.length, label: l("Festivals") },
+          ].map((s) => (
+            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: "13px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "16px", boxShadow: "var(--shadow-sm)", padding: "16px 18px" }}>
+              <span style={{ width: "42px", height: "42px", borderRadius: "12px", background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name={s.icon} size={20} color={s.color} /></span>
+              <div>
+                <div style={{ fontSize: "22px", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: "12px", color: "var(--text-2)", marginTop: "3px" }}>{s.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Container>
+
+      {/* Top Experiences */}
+      <Section label="Discover" title={`${l("Top Experiences")}`}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "20px" }}>
+          {([
+            { title: l("Signature Dishes"), sub: city.famous.slice(0, 2).join(", "), img: dishes[0]?.image || city.image, on: () => go("dish", dishes[0]?.name || city.famous[0]) },
+            { title: l("Explore Local Street Food"), sub: l(city.name), img: (dishes.find((d) => d.category === "Street Food") || dishes[1] || dishes[0])?.image || city.image, on: () => go("experience", "Street Food") },
+            { title: l("Historic Restaurants to Visit"), sub: l(city.name), img: rests[0]?.image || city.image, on: () => go("restaurant", rests[0]?.name || "") },
+            { title: l("Food Markets & Local Flavours"), sub: l(city.name), img: dishes[2]?.image || dishes[0]?.image || city.image, on: () => go("stories", "All") },
+          ]).map((e, i) => <ExperienceTile key={i} {...e} />)}
+        </div>
+      </Section>
 
       <Section label="Restaurants" title={`${l("Top restaurants in")} ${l(city.name)}`} action={<Btn variant="outline" size="sm" onClick={() => go("restaurants")}>{l("View all")}</Btn>}><Grid>{rests.map((r) => <RestaurantCard key={r.id} r={r} />)}</Grid></Section>
       <Section label="Signature Dishes" title="What to eat"><Grid>{dishes.slice(0, 6).map((d) => <DishCard key={d.id} d={d} />)}</Grid></Section>
