@@ -54,40 +54,53 @@ export function RestaurantCard({ r }: { r: Restaurant }) {
   );
 }
 
-/* ── Dish card (with story / recipe / explore) ──────────────────── */
-export function DishCard({ d }: { d: Dish }) {
+/* ── Universal DishCard ─────────────────────────────────────────────
+   The single, reusable dish component (search, related, city, experience,
+   restaurant menu, recommendations). Data via props only; restaurant-
+   specific data (price, signature) passed separately as optional props. */
+function DishBadge({ bg, color, icon, children }: { bg: string; color: string; icon: string; children: React.ReactNode }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color, background: bg, borderRadius: "999px", padding: "4px 9px", boxShadow: "var(--shadow-sm)" }}>
+      <Icon name={icon} size={11} color={color} />{children}
+    </span>
+  );
+}
+export function DishCard({ d, price, signature }: { d: Dish; price?: number; signature?: boolean }) {
   const go = useGo();
   const { l, dishDesc } = useI18n();
   const { h, on } = useHover();
   return (
-    <div {...on} style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
-      <div onClick={() => go("dish", d.name)} style={{ position: "relative", height: "200px", overflow: "hidden", cursor: "pointer" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={d.image} alt={d.name} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 500ms ease", transform: h ? "scale(1.06) rotate(-0.5deg)" : "scale(1)" }} />
-        <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", background: "rgba(17,17,17,0.6)", backdropFilter: "blur(6px)", borderRadius: "999px", padding: "5px 11px" }}>{l(d.category)}</span>
+    <div {...on} onClick={() => go("dish", d.name)}
+      style={{ ...cardBase, borderRadius: "22px", display: "flex", flexDirection: "column", boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-6px)" : "none", transition: "transform 300ms cubic-bezier(.16,1,.3,1), box-shadow 300ms ease" }}>
+      {/* Master dish render — plated, studio-lit, consistent everywhere */}
+      <div style={{ position: "relative", height: "208px", display: "flex", alignItems: "center", justifyContent: "center", background: "radial-gradient(circle at 50% 38%, #FCFBF8 0%, #F1ECE3 100%)", perspective: "820px", overflow: "hidden" }}>
+        <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", background: "rgba(17,17,17,0.55)", backdropFilter: "blur(6px)", borderRadius: "999px", padding: "5px 11px", zIndex: 2 }}>{l(d.category)}</span>
+        <div style={{ position: "absolute", top: "14px", right: "14px", display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end", zIndex: 2 }}>
+          {signature && <DishBadge bg="#FBE9EA" color="var(--red)" icon="star">{l("Signature")}</DishBadge>}
+          {d.vegetarian && <DishBadge bg="#E3F0E4" color="var(--success)" icon="leaf">{l("Vegetarian")}</DishBadge>}
+        </div>
+        <div style={{ width: "156px", height: "156px", borderRadius: "50%", overflow: "hidden", border: "5px solid #fff", boxShadow: h ? "0 22px 34px rgba(17,17,17,0.24)" : "0 14px 26px rgba(17,17,17,0.16)", transformStyle: "preserve-3d", transform: h ? "rotateX(9deg) scale(1.06)" : "rotateX(0deg) scale(1)", transition: "transform 340ms cubic-bezier(.2,.8,.2,1), box-shadow 340ms ease" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={d.image} alt={d.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        </div>
       </div>
-      <div style={{ padding: "20px 22px" }}>
+      <div style={{ padding: "18px 22px 20px", display: "flex", flexDirection: "column", flex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px", marginBottom: "6px" }}>
-          <h3 onClick={() => go("dish", d.name)} style={{ fontSize: "19px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.2, cursor: "pointer" }}>{d.name}</h3>
+          <h3 style={{ fontSize: "18px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.2 }}>{d.name}</h3>
           <Stars rating={d.rating} />
         </div>
-        <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.55, marginBottom: "16px", minHeight: "44px" }}>{dishDesc(d)}</p>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <MiniBtn icon="book-open" onClick={() => go("dish", d.name)}>{l("Story")}</MiniBtn>
-          <MiniBtn icon="utensils" onClick={() => go("dish", d.name)}>{l("Recipe")}</MiniBtn>
-          <Btn variant="primary" size="sm" iconRight="arrow-right" onClick={() => go("dish", d.name)}>{l("Explore")}</Btn>
+        <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.55, marginBottom: "16px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: "43px" }}>{dishDesc(d)}</p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto", paddingTop: "14px", borderTop: "1px solid var(--border)" }}>
+          {price != null
+            ? <span style={{ fontSize: "17px", fontWeight: 700, color: "var(--text)" }}>€{price}</span>
+            : <span />}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "14px", fontWeight: 600, color: "var(--red)" }}>
+            {l("View Dish")}
+            <span style={{ display: "inline-flex", transform: h ? "translateX(3px)" : "none", transition: "transform 220ms ease" }}><Icon name="arrow-right" size={16} color="var(--red)" /></span>
+          </span>
         </div>
       </div>
     </div>
-  );
-}
-function MiniBtn({ icon, children, onClick }: { icon: string; children: React.ReactNode; onClick?: () => void }) {
-  const { h, on } = useHover();
-  return (
-    <button {...on} onClick={onClick}
-      style={{ display: "inline-flex", alignItems: "center", gap: "6px", height: "40px", padding: "0 14px", borderRadius: "12px", fontSize: "13px", fontWeight: 600, color: "var(--text)", background: h ? "#F7F5F0" : "transparent", boxShadow: "inset 0 0 0 1.5px var(--border)", transition: "background 180ms ease" }}>
-      <Icon name={icon} size={15} color="var(--text-2)" />{children}
-    </button>
   );
 }
 

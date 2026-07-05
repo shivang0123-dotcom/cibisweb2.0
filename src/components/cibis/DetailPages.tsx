@@ -232,15 +232,9 @@ function Meta({ icon, text }: { icon: string; text: string }) {
 /* ── Restaurant page ────────────────────────────────────────────── */
 /* ── Restaurant menu — categorized, smoothly expanding ──────────── */
 function MenuSection({ r }: { r: Restaurant }) {
-  const go = useGo();
-  const { l, dishDesc } = useI18n();
+  const { l } = useI18n();
   const { groups, drinks } = restaurantMenu(r);
   const [open, setOpen] = useState<string>(groups[0]?.label ?? "");
-  const rowBadge = (bg: string, color: string, icon: string, text: string) => (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color, background: bg, borderRadius: "999px", padding: "3px 8px" }}>
-      <Icon name={icon} size={11} color={color} />{text}
-    </span>
-  );
   const Accordion = ({ label, count, children }: { label: string; count: number; children: ReactNode }) => {
     const isOpen = open === label;
     return (
@@ -258,27 +252,14 @@ function MenuSection({ r }: { r: Restaurant }) {
   };
   return (
     <Section label="Menu" title="Our menu">
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "880px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {groups.map((g) => (
           <Accordion key={g.label} label={g.label} count={g.items.length}>
-            {g.items.map(({ dish, price, signature }) => (
-              <button key={dish.id} onClick={() => go("dish", dish.name)}
-                style={{ width: "100%", display: "flex", alignItems: "center", gap: "16px", padding: "14px 0", borderTop: "1px solid var(--border)", textAlign: "left" }}>
-                <span style={{ width: "58px", height: "58px", borderRadius: "50%", overflow: "hidden", flexShrink: 0, boxShadow: "var(--shadow-sm)" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={dish.image} alt={dish.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "3px" }}>
-                    <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--text)" }}>{dish.name}</span>
-                    {signature && rowBadge("#FBE9EA", "var(--red)", "star", l("Signature"))}
-                    {dish.vegetarian && rowBadge("#E3F0E4", "var(--success)", "leaf", l("Vegetarian"))}
-                  </span>
-                  <span style={{ display: "block", fontSize: "13px", color: "var(--text-2)", lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dishDesc(dish)}</span>
-                </span>
-                <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--text)", flexShrink: 0 }}>€{price}</span>
-              </button>
-            ))}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "18px", padding: "10px 0 6px" }}>
+              {g.items.map(({ dish, price, signature }) => (
+                <DishCard key={dish.id} d={dish} price={price} signature={signature} />
+              ))}
+            </div>
           </Accordion>
         ))}
         {drinks.length > 0 && (
