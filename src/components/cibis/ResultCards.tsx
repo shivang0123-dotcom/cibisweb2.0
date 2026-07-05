@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import { Icon } from "./icons";
 import { Btn, Stars, useGo } from "./ui";
-import { cityById, type Dish, type Restaurant, type Story, type Video, type City, type News } from "./data";
+import { cityById, onImgErr, type Dish, type Restaurant, type Story, type Video, type City, type News } from "./data";
 import { servedCount, restaurantsServing, dishStories, dishVideos, type Result } from "./search-utils";
 import { useI18n } from "./i18n";
 
@@ -27,7 +27,7 @@ export function RestaurantCard({ r }: { r: Restaurant }) {
       style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
       <div style={{ position: "relative", height: "200px", overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={r.image} alt={r.name} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
+        <img src={r.image} alt={r.name} onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
         {r.michelin > 0 && (
           <span style={{ position: "absolute", top: "14px", left: "14px", display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px", fontWeight: 600, color: "#fff", background: "var(--red)", borderRadius: "999px", padding: "5px 11px" }}>
             <Icon name="award" size={13} color="#fff" />{r.michelin} Michelin
@@ -81,7 +81,7 @@ export function DishCard({ d, price, signature }: { d: Dish; price?: number; sig
         </div>
         <div style={{ width: "156px", height: "156px", borderRadius: "50%", overflow: "hidden", border: "5px solid #fff", boxShadow: h ? "0 22px 34px rgba(17,17,17,0.24)" : "0 14px 26px rgba(17,17,17,0.16)", transformStyle: "preserve-3d", transform: h ? "rotateX(9deg) scale(1.06)" : "rotateX(0deg) scale(1)", transition: "transform 340ms cubic-bezier(.2,.8,.2,1), box-shadow 340ms ease" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={d.image} alt={d.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={d.image} alt={d.name} loading="lazy" onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
       </div>
       <div style={{ padding: "18px 22px 20px", display: "flex", flexDirection: "column", flex: 1 }}>
@@ -115,7 +115,7 @@ export function StoryResultCard({ s }: { s: Story }) {
     <div {...on} onClick={() => go(view, s.title)} style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
       <div style={{ position: "relative", height: "190px", overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={s.image} alt={s.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
+        <img src={s.image} alt={s.title} onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
         <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: badge, borderRadius: "999px", padding: "6px 13px" }}>{l(s.category)}</span>
       </div>
       <div style={{ padding: "20px 22px 22px" }}>
@@ -139,7 +139,7 @@ export function VideoCard({ v }: { v: Video }) {
     <div {...on} onClick={() => go("video", v.title)} style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
       <div style={{ position: "relative", height: "200px", overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={v.thumb} alt={v.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
+        <img src={v.thumb} alt={v.title} onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
         <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "60px", height: "60px", borderRadius: "50%", background: "rgba(255,255,255,0.92)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--shadow)" }}>
           <Icon name="play" size={24} color="var(--red)" className="fill-current" />
         </span>
@@ -162,7 +162,7 @@ export function CityCard({ c }: { c: City }) {
     <div {...on} onClick={() => go("city", c.name)} style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
       <div style={{ position: "relative", height: "230px", overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={c.image} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 500ms ease", transform: h ? "scale(1.05)" : "scale(1)" }} />
+        <img src={c.image} alt={c.name} onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 500ms ease", transform: h ? "scale(1.05)" : "scale(1)" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(17,17,17,0.72), rgba(17,17,17,0) 55%)" }} />
         <div style={{ position: "absolute", left: "20px", bottom: "16px", right: "20px" }}>
           <div style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}>{l(c.name)}</div>
@@ -190,7 +190,7 @@ export function NewsCard({ n }: { n: News }) {
     <div {...on} onClick={() => go("news", n.title)} style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
       <div style={{ position: "relative", height: "180px", overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={n.image} alt={n.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
+        <img src={n.image} alt={n.title} onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
         <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text)", background: "var(--star)", borderRadius: "999px", padding: "5px 12px" }}>{l(n.tag)}</span>
       </div>
       <div style={{ padding: "18px 22px 20px" }}>
@@ -212,7 +212,7 @@ export function RecipeCard({ d }: { d: Dish }) {
       style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
       <div style={{ position: "relative", height: "190px", overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={d.image} alt={d.name} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
+        <img src={d.image} alt={d.name} onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
         <span style={{ position: "absolute", top: "14px", left: "14px", display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: "var(--success)", borderRadius: "999px", padding: "6px 12px" }}>
           <Icon name="chef-hat" size={13} color="#fff" />{l("Recipe")}
         </span>
@@ -279,7 +279,7 @@ export function QuickSummaryCard({ entity }: { entity: Result }) {
         </div>
         <div style={{ position: "relative", minHeight: "300px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={d.image} alt={d.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={d.image} alt={d.name} onError={onImgErr} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
       </div>
     );
@@ -312,7 +312,7 @@ export function QuickSummaryCard({ entity }: { entity: Result }) {
         </div>
         <div style={{ position: "relative", minHeight: "300px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={r.image} alt={r.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={r.image} alt={r.name} onError={onImgErr} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
       </div>
     );
@@ -336,7 +336,7 @@ export function QuickSummaryCard({ entity }: { entity: Result }) {
       </div>
       <div style={{ position: "relative", minHeight: "300px" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={c.image} alt={c.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={c.image} alt={c.name} onError={onImgErr} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
     </div>
   );

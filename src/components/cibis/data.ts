@@ -15,6 +15,63 @@ const IMGS = [
 export function img(i: number, w = 800, h = 600) {
   return `https://images.unsplash.com/${IMGS[((i % IMGS.length) + IMGS.length) % IMGS.length]}?w=${w}&h=${h}&fit=crop&auto=format`;
 }
+const UNSPLASH = (id: string, w: number, h: number) =>
+  `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&auto=format&q=72`;
+
+/* Safe fallback if any remote photo fails to load. */
+export const FOOD_FALLBACK = UNSPLASH("1533777324565-a040eb52facd", 800, 600);
+export function onImgErr(e: { currentTarget: HTMLImageElement }) {
+  const t = e.currentTarget;
+  if (t.dataset.fb) return;
+  t.dataset.fb = "1";
+  t.src = FOOD_FALLBACK;
+}
+
+/* Keyword photos (LoremFlickr) for restaurants, cities, stories — stable per seed. */
+function foodImg(keywords: string, seed: number, w = 800, h = 600) {
+  return `https://loremflickr.com/${w}/${h}/${encodeURIComponent(keywords)}?lock=${((seed % 9973) + 9973) % 9973 || 1}`;
+}
+function restKeyword(cuisine: string): string {
+  const c = cuisine.toLowerCase();
+  if (c.includes("pizza")) return "pizzeria,restaurant";
+  if (c.includes("pasticceria")) return "bakery,pastry";
+  if (c.includes("seafood")) return "seafood,restaurant";
+  if (c.includes("fine")) return "finedining,restaurant";
+  if (c.includes("street")) return "streetfood,italian";
+  return "restaurant,italian,interior";
+}
+const GALLERY_KW = ["restaurant,interior", "restaurant,dining", "kitchen,chef", "italian,food,plating"];
+export const cityPhoto = (name: string, seed: number, w = 1200, h = 800) => foodImg(`${name.toLowerCase()},italy,cityscape`, seed, w, h);
+
+/* Curated premium Unsplash plated dishes — the right food per dish/category. */
+const DISH_PHOTOS: Record<string, string[]> = {
+  Pasta: ["1612874742237-6526221588e3", "1608897013039-887f21d8c804", "1621996346565-e3dbc646d9a9", "1551183053-bf91a1d81141", "1481931098730-318b6f776db0", "1473093295043-cdd812d0e601"],
+  Pizza: ["1574071318508-1cdbab80d002", "1513104890138-7c749659a591", "1565299624946-b28f40a0ae38", "1595854341625-f33ee10dbf94"],
+  Desserts: ["1571877227200-a0d98ea607e9", "1567620905732-2d1ec7ab7445", "1488477181946-6428a0291777"],
+  Seafood: ["1559737558-2f5a35f4523b", "1580476262798-bddd9f4b7369", "1563379926898-05f4575a45d8"],
+  "Main Course": ["1544025162-d76694265947", "1546964124-0cce460f38ef", "1517244683847-7456b63c5969"],
+  "Fine Dining": ["1533777324565-a040eb52facd", "1580476262798-bddd9f4b7369", "1546964124-0cce460f38ef"],
+  Vegetarian: ["1592417817098-8fd3d9eb14a5", "1473093295043-cdd812d0e601", "1488477181946-6428a0291777"],
+  "Street Food": ["1513104890138-7c749659a591", "1533777324565-a040eb52facd", "1565299624946-b28f40a0ae38"],
+  Antipasti: ["1533777324565-a040eb52facd", "1592417817098-8fd3d9eb14a5", "1559737558-2f5a35f4523b"],
+};
+const DISH_PHOTO_OVERRIDE: Record<string, string> = {
+  "Carbonara": "1612874742237-6526221588e3", "Cacio e Pepe": "1481931098730-318b6f776db0",
+  "Risotto alla Milanese": "1476124369491-e7addf5db371", "Risotto al Salto": "1476124369491-e7addf5db371", "Risotto al Nero di Seppia": "1476124369491-e7addf5db371",
+  "Margherita Pizza": "1574071318508-1cdbab80d002", "Marinara Pizza": "1513104890138-7c749659a591", "Pizza Bufalina": "1595854341625-f33ee10dbf94",
+  "Bistecca alla Fiorentina": "1546964124-0cce460f38ef", "Brasato al Barolo": "1544025162-d76694265947",
+  "Panna Cotta": "1488477181946-6428a0291777", "Cannoli": "1567620905732-2d1ec7ab7445", "Tiramisu": "1571877227200-a0d98ea607e9",
+  "Tagliatelle al Ragù": "1551183053-bf91a1d81141", "Lasagne alla Bolognese": "1551183053-bf91a1d81141",
+  "Trofie al Pesto": "1473093295043-cdd812d0e601", "Pansoti alla Salsa di Noci": "1473093295043-cdd812d0e601",
+  "Panzanella": "1592417817098-8fd3d9eb14a5", "Caponata": "1592417817098-8fd3d9eb14a5",
+  "Spaghetti alle Vongole": "1563379926898-05f4575a45d8", "Crudo di Mare": "1559737558-2f5a35f4523b", "Vitello Tonnato": "1580476262798-bddd9f4b7369",
+};
+function dishPhoto(name: string, category: string, seed: number, w = 800, h = 600): string {
+  const id = DISH_PHOTO_OVERRIDE[name];
+  if (id) return UNSPLASH(id, w, h);
+  const arr = DISH_PHOTOS[category] || DISH_PHOTOS.Pasta;
+  return UNSPLASH(arr[((seed % arr.length) + arr.length) % arr.length], w, h);
+}
 
 export type DishCategory =
   | "Pizza" | "Pasta" | "Desserts" | "Seafood" | "Vegetarian" | "Fine Dining"
@@ -66,6 +123,8 @@ export const CITIES: City[] = [
   { id: "genoa", name: "Genoa", region: "Liguria", image: img(1, 1200, 800), blurb: "Ligurian port city and birthplace of pesto.", culture: "Ligurian cooking is green and fragrant — basil pesto, focaccia and herbs from the coast.", famous: ["Trofie al Pesto", "Focaccia Genovese"] },
   { id: "bari", name: "Bari", region: "Puglia", image: img(2, 1200, 800), blurb: "Puglia's coastal capital of orecchiette and olive oil.", culture: "Pugliese food is the food of the sun — durum wheat pasta, greens, seafood and superb olive oil.", famous: ["Orecchiette alle Cime di Rapa", "Panzerotti", "Burrata"] },
 ];
+// Real cityscape photos, one per city.
+CITIES.forEach((c, i) => { c.image = cityPhoto(c.name, i + 1); });
 
 /* ── Dishes (40) ─────────────────────────────────────────────────── */
 type DSeed = [name: string, cityId: string, cat: DishCategory, veg: boolean, desc: string];
@@ -366,7 +425,7 @@ export const DISHES: Dish[] = DISH_SEED.map(([name, cityId, category, veg, desc]
     id: "d-" + name.toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, ""),
     name, cityId, category, vegetarian: veg, description: desc,
     rating: Math.round((4.4 + ((i * 37) % 6) / 10) * 10) / 10,
-    image: img(i + 3, 800, 600),
+    image: dishPhoto(name, category, i, 800, 600),
     history: `${name} is woven into the food history of ${CITIES.find((c) => c.id === cityId)?.name}. Generations of cooks have guarded its method, and it remains a point of local pride and gentle rivalry between kitchens.`,
     ingredients: ingredientsFor(name, category),
     steps: stepsFor(name, category),
@@ -483,9 +542,9 @@ export const RESTAURANTS: Restaurant[] = REST_SEED.map(([name, cityId, cuisine, 
   openNow: i % 3 !== 0,
   vegetarian: cuisine !== "Seafood" && cuisine !== "Pizza",
   signatureDishes,
-  image: img(i, 800, 600),
+  image: foodImg(restKeyword(cuisine), i * 4 + 200, 800, 600),
   story: `${name} grew out of a simple conviction: that ${CITIES.find((c) => c.id === cityId)?.name}'s food deserves to be cooked with respect. What began modestly has become a destination, without ever losing the warmth of a family table.`,
-  gallery: [img(i, 600, 450), img(i + 2, 600, 450), img(i + 4, 600, 450), img(i + 6, 600, 450)],
+  gallery: GALLERY_KW.map((kw, k) => foodImg(kw, i * 4 + k + 300, 600, 450)),
   reviews: [REVIEW_POOL[i % 4], REVIEW_POOL[(i + 1) % 4], REVIEW_POOL[(i + 2) % 4]],
   hours: [
     { days: "Tue – Fri", time: i % 2 === 0 ? "12:30 – 14:30 · 19:30 – 23:00" : "12:00 – 15:00 · 19:00 – 22:30" },
@@ -523,7 +582,7 @@ const STORY_SEED: SSeed[] = [
 export const STORIES: Story[] = STORY_SEED.map(([title, category, readTime, excerpt], i) => ({
   id: "s-" + i,
   title, category, readTime, excerpt,
-  image: img(i + 5, 800, 600),
+  image: foodImg(`italian,food,${title.split(/\s+/).slice(-1)[0].toLowerCase().replace(/[^a-z]/g, "") || "cuisine"}`, i + 500, 800, 600),
   date: `Jun ${((i * 3) % 27) + 1}, 2026`,
   dishId: DISHES[i % DISHES.length]?.id,
   cityId: CITIES[i % CITIES.length]?.id,
@@ -543,7 +602,7 @@ const VIDEO_SEED: [string, string][] = [
   ["Pesto the Ligurian Way", "5:02"],
 ];
 export const VIDEOS: Video[] = VIDEO_SEED.map(([title, duration], i) => ({
-  id: "v-" + i, title, duration, thumb: img(i + 6, 800, 500), channel: "CIBISWEB Studios",
+  id: "v-" + i, title, duration, thumb: foodImg("cooking,italian,food", i + 600, 800, 500), channel: "CIBISWEB Studios",
   dishId: DISHES[i % DISHES.length]?.id,
 }));
 
@@ -573,7 +632,7 @@ const NEWS_SEED: [string, string][] = [
 export const NEWS: News[] = NEWS_SEED.map(([title, tag], i) => ({
   id: "n-" + i, title, tag,
   date: `Jun ${((i * 4) % 27) + 1}, 2026`,
-  image: img(i + 1, 800, 600),
+  image: foodImg("italian,food,restaurant", i + 700, 800, 600),
   excerpt: "Our newsroom rounds up what it means for cooks, restaurants and eaters across the country this season.",
 }));
 
@@ -724,10 +783,10 @@ export const attractionsFor = (id: string) => NEARBY_ATTRACTIONS[id] || NEARBY_A
 
 /* Approx. map coordinates (viewBox 0 0 400 520) for the Italy map section */
 export const CITY_MAP_POS: Record<string, { x: number; y: number }> = {
-  turin: { x: 112, y: 150 }, milan: { x: 158, y: 132 }, venice: { x: 224, y: 142 },
-  genoa: { x: 138, y: 182 }, bologna: { x: 188, y: 175 }, florence: { x: 182, y: 208 },
-  rome: { x: 198, y: 280 }, naples: { x: 244, y: 306 }, bari: { x: 316, y: 300 },
-  palermo: { x: 224, y: 456 },
+  turin: { x: 92, y: 142 }, milan: { x: 150, y: 112 }, venice: { x: 248, y: 122 },
+  genoa: { x: 116, y: 198 }, bologna: { x: 204, y: 172 }, florence: { x: 176, y: 226 },
+  rome: { x: 194, y: 296 }, naples: { x: 252, y: 322 }, bari: { x: 326, y: 306 },
+  palermo: { x: 226, y: 472 },
 };
 
 /* ── Experiences (Hero chips + footer cities reuse city pages) ──── */
@@ -798,5 +857,13 @@ export const EXPERIENCES_META: Record<string, Experience> = {
     match: { categories: ["Seafood"], cuisineIncludes: ["Seafood"] },
   },
 };
+const EXP_KW: Record<string, string> = {
+  "Fine Dining": "finedining,gourmet", Pizza: "pizza,wood", "Date Night": "restaurant,dinner,candle",
+  Rome: "rome,italy", "Hidden Cafés": "cafe,espresso,italy", Michelin: "gourmet,plating",
+  Vegetarian: "vegetables,salad", "Street Food": "streetfood,fried", Desserts: "dessert,pastry",
+  Seafood: "seafood,fish",
+};
+Object.values(EXPERIENCES_META).forEach((e, i) => { e.image = foodImg(EXP_KW[e.label] || "italian,food", i + 800, 1400, 700); });
+
 export const experienceByLabel = (label: string): Experience | undefined =>
   EXPERIENCES_META[label] || Object.values(EXPERIENCES_META).find((e) => e.label.toLowerCase() === label.toLowerCase());

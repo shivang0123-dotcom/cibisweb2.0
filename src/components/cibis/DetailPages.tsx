@@ -7,7 +7,7 @@ import { Container, Btn, Stars, useGo } from "./ui";
 import { DishCard, RestaurantCard, StoryResultCard, VideoCard, NewsCard, RecipeCard, CityCard } from "./ResultCards";
 import {
   DISHES, RESTAURANTS, STORIES, VIDEOS, NEWS,
-  cityById, dishByName, restaurantByName, cityByName, cityExtra, attractionsFor,
+  cityById, dishByName, restaurantByName, cityByName, cityExtra, attractionsFor, onImgErr,
   type Restaurant,
 } from "./data";
 import {
@@ -59,7 +59,7 @@ function ExperienceTile({ title, sub, img, on }: { title: string; sub: string; i
       style={{ textAlign: "left", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "18px", overflow: "hidden", boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none", transition: "transform 240ms ease, box-shadow 240ms ease" }}>
       <div style={{ position: "relative", height: "140px", overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={img} alt={title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.05)" : "scale(1)" }} />
+        <img src={img} alt={title} loading="lazy" onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.05)" : "scale(1)" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(17,17,17,0.35), transparent 60%)" }} />
       </div>
       <div style={{ padding: "16px 18px" }}>
@@ -148,7 +148,7 @@ export function DishPage({ query }: { query: string }) {
           <button key={r.id} onClick={() => go("restaurant", r.name)} style={{ display: "flex", alignItems: "center", gap: "12px", textAlign: "left" }}>
             <span style={{ width: "40px", height: "40px", borderRadius: "11px", overflow: "hidden", flexShrink: 0 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={r.image} alt={r.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src={r.image} alt={r.name} loading="lazy" onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </span>
             <span style={{ flex: 1 }}>
               <span style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{r.name}</span>
@@ -222,7 +222,7 @@ export function DishPage({ query }: { query: string }) {
               <div style={{ position: "relative", width: "88%", maxWidth: "420px", aspectRatio: "1", transformStyle: "preserve-3d", transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`, transition: tilt.active ? "transform 120ms ease-out" : "transform 500ms cubic-bezier(.2,.8,.2,1)", animation: "floaty 6s ease-in-out infinite" }}>
                 <div style={{ position: "absolute", left: "50%", bottom: "6%", width: "70%", height: "10%", transform: "translateX(-50%) translateZ(-40px)", background: "rgba(17,17,17,0.22)", filter: "blur(26px)", borderRadius: "50%" }} />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={dish.image} alt={dish.name} loading="eager" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%", border: "8px solid #fff", boxShadow: "var(--shadow-float)", transform: "translateZ(0)" }} />
+                <img src={dish.image} alt={dish.name} loading="eager" onError={onImgErr} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%", border: "8px solid #fff", boxShadow: "var(--shadow-float)", transform: "translateZ(0)" }} />
               </div>
             </div>
           </div>
@@ -235,7 +235,7 @@ export function DishPage({ query }: { query: string }) {
                   {rests.slice(0, 5).map((r, i) => (
                     <span key={r.id} style={{ width: "36px", height: "36px", borderRadius: "50%", overflow: "hidden", border: "2px solid var(--card)", marginLeft: i ? "-12px" : 0 }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={r.image} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={r.image} alt="" loading="lazy" onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </span>
                   ))}
                 </div>
@@ -394,7 +394,7 @@ export function RestaurantPage({ query }: { query: string }) {
       <section style={{ padding: "0 0 24px" }}>
         <div style={{ position: "relative", height: "380px", overflow: "hidden" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={r.image} alt={r.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={r.image} alt={r.name} onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(17,17,17,0.78), rgba(17,17,17,0.1) 60%)" }} />
           <div style={{ position: "absolute", top: "22px", right: "24px", display: "flex", gap: "10px", zIndex: 3 }}>
             <button onClick={() => setFav((f) => !f)} aria-pressed={fav} aria-label={fav ? l("Saved") : l("Add to favourites")} title={fav ? l("Saved") : l("Add to favourites")}
@@ -476,7 +476,7 @@ export function RestaurantPage({ query }: { query: string }) {
           {r.gallery.map((g, i) => (
             <div key={i} style={{ borderRadius: "16px", overflow: "hidden", height: "180px" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={g} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src={g} alt="" onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           ))}
         </div>
@@ -496,7 +496,7 @@ export function RestaurantPage({ query }: { query: string }) {
                   {[r.gallery[i % r.gallery.length], r.gallery[(i + 1) % r.gallery.length]].map((g, k) => (
                     <div key={k} style={{ width: "72px", height: "72px", borderRadius: "12px", overflow: "hidden" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={g} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={g} alt="" onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                   ))}
                 </div>
@@ -582,7 +582,7 @@ export function CityPage({ query }: { query: string }) {
       <section style={{ padding: "0 0 24px" }}>
         <div style={{ position: "relative", height: "420px", overflow: "hidden" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={city.image} alt={city.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={city.image} alt={city.name} onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(17,17,17,0.8), rgba(17,17,17,0.15) 60%)" }} />
           <Container style={{ maxWidth: "1320px", position: "absolute", left: 0, right: 0, bottom: "40px" }}>
             <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#F0A8AC", marginBottom: "12px" }}>{l(city.region)}</div>
@@ -726,7 +726,7 @@ export function ArticleDetail({ query, kind }: { query: string; kind: "story" | 
         <Container style={{ maxWidth: "980px", paddingBottom: "8px" }}>
           <div style={{ borderRadius: "24px", overflow: "hidden", height: "460px", position: "relative" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <img src={image} alt={title} onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             {kind === "video" && (
               <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "80px", height: "80px", borderRadius: "50%", background: "rgba(255,255,255,0.94)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--shadow-lg)" }}>
                 <Icon name="play" size={32} color="var(--red)" className="fill-current" />
@@ -790,7 +790,7 @@ export function ExperiencePage({ query }: { query: string }) {
       <section style={{ padding: "0 0 8px" }}>
         <div style={{ position: "relative", height: "340px", overflow: "hidden" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={meta.image} alt={meta.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={meta.image} alt={meta.label} onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(17,17,17,0.78), rgba(17,17,17,0.12) 60%)" }} />
           <Container style={{ maxWidth: "1320px", position: "absolute", left: 0, right: 0, bottom: "36px" }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#F0A8AC", marginBottom: "12px" }}>

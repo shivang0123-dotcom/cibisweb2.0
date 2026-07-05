@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Icon } from "./icons";
 import { Container, SectionLabel, useGo } from "./ui";
-import { CITIES, CITY_MAP_POS, cityById, cityExtra } from "./data";
+import { CITIES, CITY_MAP_POS, cityById, cityExtra, onImgErr } from "./data";
 import { cityRestaurants, cityDishes, cityStories, cityVideos } from "./search-utils";
 import { useI18n } from "./i18n";
 
@@ -23,13 +23,16 @@ const METRICS: { key: MetricKey; label: string; icon: string; count: (id: string
   { key: "videos", label: "Videos", icon: "play", count: (id) => cityVideos(id).length },
   { key: "festivals", label: "Festivals", icon: "party-popper", count: (id) => cityExtra(id).festivals.length },
 ];
+const LANDMARK: Record<string, string> = {
+  rome: "🏛️", milan: "⛪", venice: "🛶", florence: "🎨", bologna: "🗼",
+  turin: "🏔️", naples: "🌋", palermo: "🎭", genoa: "⚓", bari: "🌊",
+};
 function CityPin({ id, active, emphasis, onEnter, onClick, label }: { id: string; active: boolean; emphasis: number; onEnter: () => void; onClick: () => void; label: string }) {
   const [h, setH] = useState(false);
   const pos = CITY_MAP_POS[id];
   if (!pos) return null;
   const on = h || active;
-  const base = 11 + emphasis * 8; // pins scale with the selected metric
-  const size = on ? base + 5 : base;
+  const marker = 26 + emphasis * 9; // landmark marker scales with the selected metric
   return (
     <button
       onMouseEnter={() => { setH(true); onEnter(); }}
@@ -39,20 +42,23 @@ function CityPin({ id, active, emphasis, onEnter, onClick, label }: { id: string
       aria-label={label}
       style={{
         position: "absolute", left: `${(pos.x / 400) * 100}%`, top: `${(pos.y / 520) * 100}%`,
-        transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: "5px",
-        zIndex: on ? 6 : 2,
+        transform: `translate(-50%, -60%) scale(${on ? 1.12 : 1})`, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
+        zIndex: on ? 8 : 3, transition: "transform 260ms cubic-bezier(.2,.8,.2,1)",
       }}>
       <span className={active ? "map-pin-active" : ""}
         style={{
-          width: `${size}px`, height: `${size}px`, borderRadius: "50%",
-          background: "var(--red)", border: "2.5px solid #fff", boxShadow: "var(--shadow-sm)",
-          opacity: 0.55 + emphasis * 0.45,
-          transition: "width 320ms cubic-bezier(.2,.8,.2,1), height 320ms cubic-bezier(.2,.8,.2,1), opacity 320ms ease",
-        }} />
+          width: `${marker}px`, height: `${marker}px`, borderRadius: "50% 50% 50% 4px", transform: "rotate(-2deg)",
+          background: on ? "var(--red)" : "var(--card)", border: `2px solid ${on ? "#fff" : "var(--border)"}`,
+          boxShadow: on ? "var(--shadow-lg)" : "var(--shadow-sm)", display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: `${Math.round(marker * 0.5)}px`, lineHeight: 1,
+          transition: "width 300ms cubic-bezier(.2,.8,.2,1), height 300ms cubic-bezier(.2,.8,.2,1), background 200ms ease, box-shadow 200ms ease",
+        }}>
+        <span style={{ transform: "rotate(2deg)", filter: on ? "grayscale(1) brightness(3)" : "none" }}>{LANDMARK[id] || "📍"}</span>
+      </span>
       <span style={{
-        fontSize: "11px", fontWeight: 600, whiteSpace: "nowrap", color: on ? "var(--red)" : "var(--text-2)",
-        background: on ? "var(--card)" : "transparent", borderRadius: "6px", padding: on ? "2px 7px" : "0",
-        boxShadow: on ? "var(--shadow-sm)" : "none", transition: "all 160ms ease",
+        fontSize: "10.5px", fontWeight: 600, whiteSpace: "nowrap", color: on ? "var(--red)" : "var(--text)",
+        background: "var(--card)", borderRadius: "6px", padding: "1px 6px",
+        boxShadow: on ? "var(--shadow-sm)" : "inset 0 0 0 1px var(--border)", transition: "all 160ms ease",
       }}>{label}</span>
     </button>
   );
@@ -148,7 +154,7 @@ export function MapSection() {
               <div style={{ display: "flex", gap: "12px", padding: "12px" }}>
                 <span style={{ width: "58px", height: "58px", borderRadius: "12px", overflow: "hidden", flexShrink: 0 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={city.image} alt={city.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={city.image} alt={city.name} loading="lazy" onError={onImgErr} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: "17px", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.1 }}>{l(city.name)}</div>
