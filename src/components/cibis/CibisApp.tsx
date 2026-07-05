@@ -5,6 +5,7 @@ import { LangProvider, NavContext, Container, Btn } from "./ui";
 import { Navbar } from "./Navbar";
 import { Hero } from "./Hero";
 import { FeaturedPartner, TopRestaurants, FeaturedStory, FoodStories, Newsletter } from "./Sections";
+import { MapSection } from "./MapSection";
 import { Footer } from "./Footer";
 import { SearchResults } from "./SearchResults";
 import { DishPage, RestaurantPage, CityPage, ArticleDetail, RestaurantListing, StoriesListing, ExperiencePage, AboutPage, ContactPage } from "./DetailPages";
@@ -58,6 +59,7 @@ export function CibisApp() {
             <TopRestaurants />
             <FeaturedStory />
             <FoodStories />
+            <MapSection />
             <Newsletter />
           </>
         )}

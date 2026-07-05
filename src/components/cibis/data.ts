@@ -707,6 +707,29 @@ export const CITY_EXTRA: Record<string, CityExtra> = {
 };
 export const cityExtra = (id: string): CityExtra => CITY_EXTRA[id] || CITY_EXTRA.rome;
 
+/* ── Nearby attractions (restaurant Location) ───────────────────── */
+export const NEARBY_ATTRACTIONS: Record<string, { name: string; type: string; mins: number }[]> = {
+  rome: [{ name: "Colosseum", type: "Landmark", mins: 8 }, { name: "Pantheon", type: "Landmark", mins: 5 }, { name: "Trevi Fountain", type: "Fountain", mins: 11 }],
+  naples: [{ name: "Spaccanapoli", type: "Old town", mins: 4 }, { name: "Castel dell'Ovo", type: "Castle", mins: 14 }, { name: "Naples Cathedral", type: "Duomo", mins: 7 }],
+  milan: [{ name: "Duomo di Milano", type: "Cathedral", mins: 6 }, { name: "Galleria Vittorio Emanuele II", type: "Arcade", mins: 7 }, { name: "Navigli", type: "Canals", mins: 12 }],
+  florence: [{ name: "Ponte Vecchio", type: "Bridge", mins: 6 }, { name: "Duomo di Firenze", type: "Cathedral", mins: 8 }, { name: "Uffizi Gallery", type: "Museum", mins: 9 }],
+  bologna: [{ name: "Piazza Maggiore", type: "Square", mins: 5 }, { name: "The Two Towers", type: "Towers", mins: 7 }, { name: "Archiginnasio", type: "Palace", mins: 6 }],
+  venice: [{ name: "St Mark's Square", type: "Square", mins: 9 }, { name: "Rialto Bridge", type: "Bridge", mins: 5 }, { name: "Grand Canal", type: "Waterway", mins: 3 }],
+  turin: [{ name: "Mole Antonelliana", type: "Landmark", mins: 8 }, { name: "Piazza San Carlo", type: "Square", mins: 5 }, { name: "Egyptian Museum", type: "Museum", mins: 7 }],
+  palermo: [{ name: "Teatro Massimo", type: "Opera house", mins: 7 }, { name: "Palermo Cathedral", type: "Cathedral", mins: 9 }, { name: "Ballarò Market", type: "Market", mins: 6 }],
+  genoa: [{ name: "Porto Antico", type: "Old port", mins: 6 }, { name: "Acquario di Genova", type: "Aquarium", mins: 8 }, { name: "Caruggi", type: "Alleys", mins: 3 }],
+  bari: [{ name: "Basilica di San Nicola", type: "Basilica", mins: 5 }, { name: "Bari Vecchia", type: "Old town", mins: 4 }, { name: "Lungomare", type: "Seafront", mins: 7 }],
+};
+export const attractionsFor = (id: string) => NEARBY_ATTRACTIONS[id] || NEARBY_ATTRACTIONS.rome;
+
+/* Approx. map coordinates (viewBox 0 0 400 520) for the Italy map section */
+export const CITY_MAP_POS: Record<string, { x: number; y: number }> = {
+  turin: { x: 112, y: 150 }, milan: { x: 158, y: 132 }, venice: { x: 224, y: 142 },
+  genoa: { x: 138, y: 182 }, bologna: { x: 188, y: 175 }, florence: { x: 182, y: 208 },
+  rome: { x: 198, y: 280 }, naples: { x: 244, y: 306 }, bari: { x: 316, y: 300 },
+  palermo: { x: 224, y: 456 },
+};
+
 /* ── Experiences (Hero chips + footer cities reuse city pages) ──── */
 export type Experience = {
   label: string; icon: string; tagline: string; intro: string; image: string;

@@ -153,6 +153,21 @@ const UI: Record<string, string> = {
   "The local table": "La tavola locale", Festivals: "Feste",
   "When the city eats together": "Quando la città mangia insieme", "Off the beaten path": "Fuori dai sentieri battuti",
   "Hidden gems & local markets": "Gemme nascoste e mercati locali", Market: "Mercato",
+  "Nearby Destinations": "Destinazioni Vicine", "More cities to taste": "Altre città da assaggiare",
+  // Map section
+  "Explore Italy Through Food": "Esplora l'Italia Attraverso il Cibo",
+  "Every region tells a different culinary story. Discover restaurants, signature dishes, local traditions and food culture across Italy.":
+    "Ogni regione racconta una storia culinaria diversa. Scopri ristoranti, piatti simbolo, tradizioni locali e cultura gastronomica in tutta Italia.",
+  "The Map": "La Mappa", "Hover a city to explore": "Passa su una città per esplorare",
+  "Select a region on the map": "Seleziona una regione sulla mappa",
+  // Restaurant module
+  "Add to favourites": "Aggiungi ai preferiti", Saved: "Salvato", "Full menu": "Menu completo",
+  "Our menu": "Il nostro menu", Starters: "Antipasti", Drinks: "Bevande",
+  Signature: "Simbolo", Vegan: "Vegano", "Photo reviews": "Recensioni con foto",
+  "Verified visit": "Visita verificata", "Nearby Attractions": "Attrazioni Vicine",
+  "Get directions": "Indicazioni", "min walk": "min a piedi", away: "di distanza",
+  "How to find us": "Come trovarci", "Related Restaurants": "Ristoranti Correlati",
+  "You might also like": "Potrebbe piacerti anche",
   // Months
   January: "Gennaio", February: "Febbraio", March: "Marzo", April: "Aprile", May: "Maggio",
   June: "Giugno", July: "Luglio", August: "Agosto", September: "Settembre", October: "Ottobre",

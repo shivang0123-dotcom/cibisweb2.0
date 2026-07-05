@@ -1,7 +1,7 @@
 // CIBISWEB — Search engine: fuzzy match, did-you-mean, relationships, surprise.
 import {
   CITIES, DISHES, RESTAURANTS, STORIES, VIDEOS, NEWS,
-  type Dish, type Restaurant, type Story, type Video, type News, type City,
+  type Dish, type Restaurant, type Story, type Video, type News, type City, type DishCategory,
   cityById, dishByName, experienceByLabel, type Experience,
 } from "./data";
 
@@ -267,4 +267,58 @@ export function primaryEntity(query: string): Result | null {
   // otherwise best fuzzy dish match
   const all = searchAll(query);
   return all.find((x) => x.kind === "dish") || all.find((x) => x.kind === "restaurant") || all.find((x) => x.kind === "city") || null;
+}
+
+/* ── Restaurant menu (categorized, data-derived) ────────────────── */
+const MENU_ORDER = ["Starters", "Pasta", "Pizza", "Main Course", "Desserts"] as const;
+const CAT_TO_MENU: Record<DishCategory, string> = {
+  Antipasti: "Starters", "Street Food": "Starters", Pasta: "Pasta", Pizza: "Pizza",
+  Seafood: "Main Course", "Main Course": "Main Course", "Fine Dining": "Main Course",
+  Vegetarian: "Main Course", Desserts: "Desserts",
+};
+const PRICE_BASE: Record<DishCategory, number> = {
+  Antipasti: 9, "Street Food": 6, Pasta: 14, Pizza: 11, Seafood: 22,
+  "Main Course": 24, "Fine Dining": 34, Vegetarian: 12, Desserts: 7,
+};
+export function dishPrice(d: Dish, tier = 2): number {
+  return Math.round(PRICE_BASE[d.category] * (0.85 + tier * 0.12));
+}
+export type MenuItem = { dish: Dish; price: number; signature: boolean };
+export type MenuGroup = { label: string; items: MenuItem[] };
+export function restaurantMenu(r: Restaurant): { groups: MenuGroup[]; drinks: { name: string; note: string; price: number }[] } {
+  const sig = new Set(r.signatureDishes.map((n) => n.toLowerCase()));
+  // Signature dishes first, then more from the same city to fill the menu.
+  const pool: Dish[] = [];
+  const seen = new Set<string>();
+  const add = (d?: Dish) => { if (d && !seen.has(d.id)) { seen.add(d.id); pool.push(d); } };
+  r.signatureDishes.forEach((n) => add(dishByName(n)));
+  cityDishes(r.cityId).forEach(add);
+  const byMenu = new Map<string, MenuItem[]>();
+  pool.forEach((d) => {
+    const label = CAT_TO_MENU[d.category];
+    if (!byMenu.has(label)) byMenu.set(label, []);
+    if (byMenu.get(label)!.length >= 6) return;
+    byMenu.get(label)!.push({ dish: d, price: dishPrice(d, r.price), signature: sig.has(d.name.toLowerCase()) });
+  });
+  const groups = MENU_ORDER.filter((l) => byMenu.has(l)).map((label) => ({
+    label,
+    items: byMenu.get(label)!.sort((a, b) => Number(b.signature) - Number(a.signature)),
+  }));
+  // Drinks derived from the wine pairings of the menu's dishes.
+  const drinkSeen = new Set<string>();
+  const drinks: { name: string; note: string; price: number }[] = [];
+  pool.forEach((d, i) => {
+    if (d.wine.type === "None" || drinkSeen.has(d.wine.name) || drinks.length >= 5) return;
+    drinkSeen.add(d.wine.name);
+    drinks.push({ name: d.wine.name, note: d.wine.type, price: 7 + ((i * 3) % 9) });
+  });
+  return { groups, drinks };
+}
+
+/* Other cities to recommend from a city page */
+export function nearbyCities(c: City, n = 3): City[] {
+  const idx = CITIES.findIndex((x) => x.id === c.id);
+  return CITIES.filter((x) => x.id !== c.id)
+    .sort((a, b) => Math.abs(CITIES.indexOf(a) - idx) - Math.abs(CITIES.indexOf(b) - idx))
+    .slice(0, n);
 }

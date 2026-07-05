@@ -4,15 +4,16 @@ import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { Icon } from "./icons";
 import { Container, Btn, Stars, useGo } from "./ui";
-import { DishCard, RestaurantCard, StoryResultCard, VideoCard, NewsCard, RecipeCard } from "./ResultCards";
+import { DishCard, RestaurantCard, StoryResultCard, VideoCard, NewsCard, RecipeCard, CityCard } from "./ResultCards";
 import {
   DISHES, RESTAURANTS, STORIES, VIDEOS, NEWS,
-  cityById, dishByName, restaurantByName, cityByName, cityExtra,
+  cityById, dishByName, restaurantByName, cityByName, cityExtra, attractionsFor,
+  type Restaurant,
 } from "./data";
 import {
   servedCount, restaurantsServing, relatedDishes, dishStories, dishVideos,
   cityRestaurants, cityDishes, cityStories, cityVideos,
-  similarRestaurants, experienceContent,
+  similarRestaurants, experienceContent, restaurantMenu, nearbyCities,
 } from "./search-utils";
 import { useI18n, useL } from "./i18n";
 
@@ -229,15 +230,140 @@ function Meta({ icon, text }: { icon: string; text: string }) {
 }
 
 /* ── Restaurant page ────────────────────────────────────────────── */
+/* ── Restaurant menu — categorized, smoothly expanding ──────────── */
+function MenuSection({ r }: { r: Restaurant }) {
+  const go = useGo();
+  const { l, dishDesc } = useI18n();
+  const { groups, drinks } = restaurantMenu(r);
+  const [open, setOpen] = useState<string>(groups[0]?.label ?? "");
+  const rowBadge = (bg: string, color: string, icon: string, text: string) => (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color, background: bg, borderRadius: "999px", padding: "3px 8px" }}>
+      <Icon name={icon} size={11} color={color} />{text}
+    </span>
+  );
+  const Accordion = ({ label, count, children }: { label: string; count: number; children: ReactNode }) => {
+    const isOpen = open === label;
+    return (
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "18px", overflow: "hidden" }}>
+        <button onClick={() => setOpen(isOpen ? "" : label)} aria-expanded={isOpen}
+          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", textAlign: "left" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "12px", fontSize: "18px", fontWeight: 600, letterSpacing: "-0.01em", color: "var(--text)" }}>
+            {l(label)}<span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-2)" }}>{count}</span>
+          </span>
+          <span style={{ display: "inline-flex", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 240ms ease", color: "var(--text-2)" }}><Icon name="chevron-down" size={18} /></span>
+        </button>
+        {isOpen && <div style={{ padding: "0 24px 8px", animation: "acc-in 260ms cubic-bezier(.16,1,.3,1)" }}>{children}</div>}
+      </div>
+    );
+  };
+  return (
+    <Section label="Menu" title="Our menu">
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "880px" }}>
+        {groups.map((g) => (
+          <Accordion key={g.label} label={g.label} count={g.items.length}>
+            {g.items.map(({ dish, price, signature }) => (
+              <button key={dish.id} onClick={() => go("dish", dish.name)}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: "16px", padding: "14px 0", borderTop: "1px solid var(--border)", textAlign: "left" }}>
+                <span style={{ width: "58px", height: "58px", borderRadius: "50%", overflow: "hidden", flexShrink: 0, boxShadow: "var(--shadow-sm)" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={dish.image} alt={dish.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "3px" }}>
+                    <span style={{ fontSize: "16px", fontWeight: 600, color: "var(--text)" }}>{dish.name}</span>
+                    {signature && rowBadge("#FBE9EA", "var(--red)", "star", l("Signature"))}
+                    {dish.vegetarian && rowBadge("#E3F0E4", "var(--success)", "leaf", l("Vegetarian"))}
+                  </span>
+                  <span style={{ display: "block", fontSize: "13px", color: "var(--text-2)", lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dishDesc(dish)}</span>
+                </span>
+                <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--text)", flexShrink: 0 }}>€{price}</span>
+              </button>
+            ))}
+          </Accordion>
+        ))}
+        {drinks.length > 0 && (
+          <Accordion label="Drinks" count={drinks.length}>
+            {drinks.map((d) => (
+              <div key={d.name} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 0", borderTop: "1px solid var(--border)" }}>
+                <span style={{ width: "40px", height: "40px", borderRadius: "12px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="wine" size={18} color="var(--red)" /></span>
+                <span style={{ flex: 1 }}>
+                  <span style={{ display: "block", fontSize: "16px", fontWeight: 600, color: "var(--text)" }}>{d.name}</span>
+                  <span style={{ display: "block", fontSize: "13px", color: "var(--text-2)" }}>{l(d.note)} {l("wine")}</span>
+                </span>
+                <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--text)" }}>€{d.price}</span>
+              </div>
+            ))}
+          </Accordion>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+/* ── Restaurant location — stylized map + directions + nearby ───── */
+function LocationSection({ r }: { r: Restaurant }) {
+  const go = useGo();
+  const { l } = useI18n();
+  const city = cityById(r.cityId);
+  const attractions = attractionsFor(r.cityId);
+  return (
+    <Section label="Location" title="How to find us">
+      <div style={{ display: "grid", gridTemplateColumns: "1.35fr 0.65fr", gap: "24px" }}>
+        {/* Stylized street map */}
+        <div style={{ position: "relative", borderRadius: "20px", overflow: "hidden", border: "1px solid var(--border)", minHeight: "320px", background: "linear-gradient(160deg, #FCFBF8 0%, #F1EDE5 100%)" }}>
+          <svg viewBox="0 0 600 340" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0 }}>
+            <g stroke="#E4DFD5" strokeWidth="10" strokeLinecap="round">
+              <path d="M -20,90 L 640,120" /><path d="M -20,220 L 640,250" />
+              <path d="M 130,-20 L 100,360" /><path d="M 330,-20 L 360,360" /><path d="M 480,-20 L 500,360" />
+            </g>
+            <g stroke="#EDE8DF" strokeWidth="4">
+              <path d="M -20,160 L 640,185" /><path d="M 230,-20 L 215,360" /><path d="M 420,-20 L 435,360" />
+            </g>
+            <circle cx="300" cy="170" r="60" fill="rgba(179,38,46,0.06)" />
+          </svg>
+          <span className="map-pin-active" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-60%)", width: "44px", height: "44px", borderRadius: "50% 50% 50% 0", background: "var(--red)", rotate: "-45deg", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--shadow-lg)" }}>
+            <span style={{ rotate: "45deg", display: "flex" }}><Icon name="utensils" size={18} color="#fff" /></span>
+          </span>
+          <div style={{ position: "absolute", left: "20px", right: "20px", bottom: "18px", background: "rgba(255,255,255,0.92)", backdropFilter: "blur(8px)", borderRadius: "16px", boxShadow: "var(--shadow)", padding: "16px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px", flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)", marginBottom: "2px" }}>{r.address}</div>
+              <div style={{ fontSize: "13px", color: "var(--text-2)" }}>{l(city?.name)}, {l(city?.region)}</div>
+            </div>
+            <Btn variant="dark" size="sm" icon="navigation" onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(r.name + " " + (city?.name || ""))}`, "_blank", "noopener")}>{l("Get directions")}</Btn>
+          </div>
+        </div>
+        {/* Nearby attractions */}
+        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "24px 26px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-2)", marginBottom: "16px" }}>{l("Nearby Attractions")}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {attractions.map((a) => (
+              <div key={a.name} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span style={{ width: "38px", height: "38px", borderRadius: "11px", background: "#FCEFD6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="map-pin" size={17} color="var(--star)" /></span>
+                <span style={{ flex: 1 }}>
+                  <span style={{ display: "block", fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>{a.name}</span>
+                  <span style={{ display: "block", fontSize: "12px", color: "var(--text-2)" }}>{a.type} · {a.mins} {l("min walk")}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => go("city", city?.name || "")} style={{ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "14px", fontWeight: 600, color: "var(--red)", marginTop: "20px" }}>
+            {l("Explore")} {l(city?.name)} <Icon name="arrow-right" size={15} />
+          </button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
 export function RestaurantPage({ query }: { query: string }) {
   const go = useGo();
   const { l, blurb, restStory } = useI18n();
   const r = restaurantByName(query) || RESTAURANTS.find((x) => x.name.toLowerCase().includes(query.toLowerCase())) || RESTAURANTS[0];
   const city = cityById(r.cityId);
-  const menu = r.signatureDishes.map((n) => dishByName(n)).filter(Boolean) as NonNullable<ReturnType<typeof dishByName>>[];
   const similar = similarRestaurants(r);
   const [reserveOpen, setReserveOpen] = useState(false);
   const [reserved, setReserved] = useState(false);
+  const [fav, setFav] = useState(false);
 
   return (
     <div>
@@ -246,6 +372,15 @@ export function RestaurantPage({ query }: { query: string }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={r.image} alt={r.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(17,17,17,0.78), rgba(17,17,17,0.1) 60%)" }} />
+          <div style={{ position: "absolute", top: "22px", right: "24px", display: "flex", gap: "10px", zIndex: 3 }}>
+            <button onClick={() => setFav((f) => !f)} aria-pressed={fav} aria-label={fav ? l("Saved") : l("Add to favourites")} title={fav ? l("Saved") : l("Add to favourites")}
+              style={{ width: "46px", height: "46px", borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.92)", backdropFilter: "blur(8px)", boxShadow: "var(--shadow-sm)", transition: "transform 180ms ease" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.06)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "none"; }}>
+              <Icon name="heart" size={20} color={fav ? "var(--red)" : "var(--text)"} className={fav ? "fill-current" : ""} />
+            </button>
+            <Btn variant="primary" size="md" icon="calendar-check" onClick={() => { setReserved(false); setReserveOpen(true); }}>{l("Reserve")}</Btn>
+          </div>
           <Container style={{ maxWidth: "1320px", position: "absolute", left: 0, right: 0, bottom: "32px" }}>
             {r.michelin > 0 && <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, color: "#fff", background: "var(--red)", borderRadius: "999px", padding: "6px 13px", marginBottom: "14px" }}><Icon name="award" size={14} color="#fff" />{r.michelin} {l("Michelin Stars")}</span>}
             <h1 style={{ fontSize: "54px", fontWeight: 700, letterSpacing: "-0.035em", color: "#fff", lineHeight: 1.02, marginBottom: "12px" }}>{r.name}</h1>
@@ -310,7 +445,7 @@ export function RestaurantPage({ query }: { query: string }) {
         </div>
       </Section>
 
-      {menu.length > 0 && <Section label="Menu" title="Signature dishes"><Grid>{menu.map((d) => <DishCard key={d.id} d={d} />)}</Grid></Section>}
+      <MenuSection r={r} />
 
       <Section label="Gallery" title="Inside">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
@@ -326,17 +461,32 @@ export function RestaurantPage({ query }: { query: string }) {
       <Section label="Reviews" title="What guests say">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
           {r.reviews.map((rev, i) => (
-            <div key={i} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "26px 28px", boxShadow: "var(--shadow-sm)" }}>
-              <div style={{ display: "flex", gap: "3px", marginBottom: "14px" }}>{Array.from({ length: rev.rating }).map((_, k) => <Icon key={k} name="star" size={16} color="var(--star)" className="rating-star" />)}</div>
-              <p style={{ fontSize: "15px", color: "var(--text)", lineHeight: 1.6, marginBottom: "18px" }}>“{l(rev.text)}”</p>
+            <div key={i} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "20px", padding: "26px 28px", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                <div style={{ display: "flex", gap: "3px" }}>{Array.from({ length: rev.rating }).map((_, k) => <Icon key={k} name="star" size={16} color="var(--star)" className="rating-star" />)}</div>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px", fontWeight: 600, color: "var(--success)" }}><Icon name="check-circle" size={13} color="var(--success)" />{l("Verified visit")}</span>
+              </div>
+              <p style={{ fontSize: "15px", color: "var(--text)", lineHeight: 1.6, marginBottom: "16px", flex: 1 }}>“{l(rev.text)}”</p>
+              {i % 2 === 0 && (
+                <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+                  {[r.gallery[i % r.gallery.length], r.gallery[(i + 1) % r.gallery.length]].map((g, k) => (
+                    <div key={k} style={{ width: "72px", height: "72px", borderRadius: "12px", overflow: "hidden" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={g} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ))}
+                </div>
+              )}
               <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-2)" }}>{rev.name}</div>
             </div>
           ))}
         </div>
       </Section>
 
+      <LocationSection r={r} />
+
       {similar.length > 0 && (
-        <Section label="Keep exploring" title="Similar restaurants">
+        <Section label="You might also like" title="Related Restaurants">
           <Grid>{similar.map((s) => <RestaurantCard key={s.id} r={s} />)}</Grid>
         </Section>
       )}
@@ -481,6 +631,7 @@ export function CityPage({ query }: { query: string }) {
 
       {stories.length > 0 && <Section label="Stories" title={`${l("Stories from")} ${l(city.name)}`}><Grid>{stories.map((s) => <StoryResultCard key={s.id} s={s} />)}</Grid></Section>}
       <Section label="Watch" title="Videos"><Grid>{vids.map((v) => <VideoCard key={v.id} v={v} />)}</Grid></Section>
+      <Section label="Nearby Destinations" title="More cities to taste"><Grid>{nearbyCities(city).map((nc) => <CityCard key={nc.id} c={nc} />)}</Grid></Section>
     </div>
   );
 }
