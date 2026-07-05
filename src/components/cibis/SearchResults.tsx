@@ -5,6 +5,7 @@ import { Icon } from "./icons";
 import { Container, Btn, useGo } from "./ui";
 import { ResultCard, QuickSummaryCard, RestaurantCard, CityCard, DishCard } from "./ResultCards";
 import { POPULAR_CATEGORIES } from "./data";
+import { useI18n } from "./i18n";
 import {
   searchAll, browseByCategory, primaryEntity, didYouMean, surprise,
   sortResults, SORT_OPTIONS, type SortKey,
@@ -24,6 +25,7 @@ const KIND_FILTERS: { key: ResultKind | "all"; label: string }[] = [
 ];
 
 function SortDropdown({ value, onChange }: { value: SortKey; onChange: (k: SortKey) => void }) {
+  const { l } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -36,7 +38,7 @@ function SortDropdown({ value, onChange }: { value: SortKey; onChange: (k: SortK
     <div ref={ref} style={{ position: "relative" }}>
       <button onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}
         style={{ display: "inline-flex", alignItems: "center", gap: "8px", height: "40px", padding: "0 16px", borderRadius: "12px", fontSize: "14px", fontWeight: 600, color: "var(--text)", background: "var(--card)", boxShadow: open ? "inset 0 0 0 1.5px var(--red)" : "inset 0 0 0 1px var(--border)", transition: "box-shadow 180ms ease" }}>
-        Sort: {current.label}
+        {l("Sort")}: {l(current.label)}
         <span style={{ display: "inline-flex", transform: open ? "rotate(180deg)" : "none", transition: "transform 200ms ease" }}><Icon name="chevron-down" size={16} color="var(--text-2)" /></span>
       </button>
       {open && (
@@ -46,7 +48,7 @@ function SortDropdown({ value, onChange }: { value: SortKey; onChange: (k: SortK
             return (
               <button key={o.key} role="option" aria-selected={on} onClick={() => { onChange(o.key); setOpen(false); }}
                 style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", padding: "10px 12px", borderRadius: "10px", fontSize: "14px", fontWeight: on ? 600 : 500, color: on ? "var(--red)" : "var(--text)", background: on ? "#FBE9EA" : "transparent", textAlign: "left" }}>
-                {o.label}
+                {l(o.label)}
                 {on && <Icon name="check-circle" size={15} color="var(--red)" />}
               </button>
             );
@@ -72,6 +74,7 @@ function SkeletonCard() {
 
 export function SearchResults({ query }: { query: string }) {
   const go = useGo();
+  const { l } = useI18n();
   const [kind, setKind] = useState<ResultKind | "all">("all");
   const [smart, setSmart] = useState<Set<SmartFilter>>(new Set());
   const [sort, setSort] = useState<SortKey>("relevance");
@@ -113,13 +116,13 @@ export function SearchResults({ query }: { query: string }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "20px", flexWrap: "wrap", marginBottom: "24px" }}>
           <div>
             <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "10px" }}>
-              {isCategory ? "Category" : "Search results"}
+              {isCategory ? l("Category") : l("Search results")}
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: "14px", flexWrap: "wrap" }}>
               <h1 style={{ fontSize: "44px", fontWeight: 600, letterSpacing: "-0.03em", color: "var(--text)", lineHeight: 1.05 }}>
-                {isCategory ? query : `“${query}”`}
+                {isCategory ? l(query) : `“${query}”`}
               </h1>
-              {!loading && <span style={{ fontSize: "16px", color: "var(--text-2)" }}>{filtered.length} result{filtered.length === 1 ? "" : "s"}</span>}
+              {!loading && <span style={{ fontSize: "16px", color: "var(--text-2)" }}>{filtered.length} {filtered.length === 1 ? l("result") : l("results")}</span>}
             </div>
           </div>
           <SortDropdown value={sort} onChange={setSort} />
@@ -129,7 +132,7 @@ export function SearchResults({ query }: { query: string }) {
         {correction && (
           <button onClick={() => go("search", correction)}
             style={{ display: "inline-flex", alignItems: "center", gap: "9px", marginBottom: "24px", padding: "10px 16px", borderRadius: "12px", background: "#FBE9EA", fontSize: "15px", color: "var(--text)" }}>
-            <Icon name="search" size={16} color="var(--red)" />Did you mean <strong style={{ color: "var(--red)" }}>{correction}</strong>?
+            <Icon name="search" size={16} color="var(--red)" />{l("Did you mean")} <strong style={{ color: "var(--red)" }}>{correction}</strong>?
           </button>
         )}
 
@@ -142,7 +145,7 @@ export function SearchResults({ query }: { query: string }) {
             return (
               <button key={f.key} onClick={() => setKind(f.key)}
                 style={{ height: "40px", padding: "0 18px", borderRadius: "999px", fontSize: "14px", fontWeight: 600, color: on ? "#fff" : "var(--text)", background: on ? "var(--red)" : "var(--card)", boxShadow: on ? "none" : "inset 0 0 0 1px var(--border)", transition: "all 200ms ease" }}>
-                {f.label}{f.key !== "all" ? ` · ${n}` : ""}
+                {l(f.label)}{f.key !== "all" ? ` · ${n}` : ""}
               </button>
             );
           })}
@@ -156,7 +159,7 @@ export function SearchResults({ query }: { query: string }) {
             return (
               <button key={f} onClick={() => toggleSmart(f)}
                 style={{ height: "36px", padding: "0 15px", borderRadius: "999px", fontSize: "13px", fontWeight: 600, color: on ? "var(--red)" : "var(--text-2)", background: on ? "#FBE9EA" : "var(--card)", boxShadow: on ? "inset 0 0 0 1.5px var(--red)" : "inset 0 0 0 1px var(--border)", transition: "all 180ms ease" }}>
-                {f}
+                {l(f)}
               </button>
             );
           })}
@@ -190,38 +193,38 @@ export function SearchResults({ query }: { query: string }) {
               <div style={{ display: "inline-flex", width: "60px", height: "60px", borderRadius: "18px", background: "#F5F3EE", alignItems: "center", justifyContent: "center", marginBottom: "18px" }}>
                 <Icon name="search-x" size={28} color="var(--text-2)" />
               </div>
-              <h3 style={{ fontSize: "24px", fontWeight: 600, color: "var(--text)", marginBottom: "8px" }}>No exact results found</h3>
+              <h3 style={{ fontSize: "24px", fontWeight: 600, color: "var(--text)", marginBottom: "8px" }}>{l("No exact results found")}</h3>
               <p style={{ fontSize: "16px", color: "var(--text-2)", maxWidth: "440px", margin: "0 auto 20px" }}>
-                Nothing matched that search or filter combination — but the table is still full. You may like these.
+                {l("Nothing matched that search or filter combination — but the table is still full. You may like these.")}
               </p>
               <div style={{ display: "flex", justifyContent: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
                 {relatedSearches(query).map((s) => (
                   <button key={s} onClick={() => go("search", s)}
                     style={{ height: "36px", padding: "0 15px", borderRadius: "999px", fontSize: "13px", fontWeight: 600, color: "var(--text)", background: "var(--card)", boxShadow: "inset 0 0 0 1px var(--border)" }}>
-                    {s}
+                    {l(s)}
                   </button>
                 ))}
               </div>
               <div style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
-                <Btn variant="outline" size="md" onClick={() => { setKind("all"); setSmart(new Set()); }}>Clear filters</Btn>
-                <Btn variant="primary" size="md" icon="sparkles" onClick={() => { const s = surprise(); go(s.view, s.query); }}>Surprise Me</Btn>
+                <Btn variant="outline" size="md" onClick={() => { setKind("all"); setSmart(new Set()); }}>{l("Clear filters")}</Btn>
+                <Btn variant="primary" size="md" icon="sparkles" onClick={() => { const s = surprise(); go(s.view, s.query); }}>{l("Surprise Me")}</Btn>
               </div>
             </div>
 
             <div style={{ marginBottom: "36px" }}>
-              <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "16px" }}>Trending dishes</div>
+              <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "16px" }}>{l("Trending dishes")}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
                 {popularDishes(3).map((d) => <DishCard key={d.id} d={d} />)}
               </div>
             </div>
             <div style={{ marginBottom: "36px" }}>
-              <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "16px" }}>Popular restaurants</div>
+              <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "16px" }}>{l("Popular restaurants")}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
                 {popularRestaurants(3).map((r) => <RestaurantCard key={r.id} r={r} />)}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "16px" }}>Cities to explore</div>
+              <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "16px" }}>{l("Cities to explore")}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
                 {popularCities(3).map((c) => <CityCard key={c.id} c={c} />)}
               </div>

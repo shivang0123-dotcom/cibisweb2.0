@@ -3,21 +3,23 @@
 import { useState } from "react";
 import { Icon } from "./icons";
 import { Container, SectionLabel, SectionHead, ActionLink, Btn, Stars, useGo } from "./ui";
+import { useI18n } from "./i18n";
 
 /* ── Featured Partner ───────────────────────────────────────────── */
 export function FeaturedPartner() {
   const go = useGo();
+  const { l } = useI18n();
   return (
     <section style={{ padding: "40px 0" }}>
       <Container style={{ maxWidth: "1320px" }}>
         <div className="reveal" style={{ background: "var(--card)", borderRadius: "24px", boxShadow: "var(--shadow)", border: "1px solid var(--border)", overflow: "hidden", display: "grid", gridTemplateColumns: "1fr 1.05fr 0.85fr" }}>
           <div style={{ padding: "48px 44px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <SectionLabel>Featured Partner</SectionLabel>
+            <SectionLabel>{l("Featured Partner")}</SectionLabel>
             <h3 style={{ fontSize: "34px", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.1, color: "var(--text)", marginBottom: "16px" }}>Osteria Francescana</h3>
             <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.65, marginBottom: "30px" }}>
-              Massimo Bottura&apos;s three-Michelin-star temple in Modena, where tradition and avant-garde meet on every plate. A defining address of modern Italian cuisine.
+              {l("Massimo Bottura's three-Michelin-star temple in Modena, where tradition and avant-garde meet on every plate. A defining address of modern Italian cuisine.")}
             </p>
-            <div><Btn variant="primary" size="md" iconRight="arrow-right" onClick={() => go("restaurant", "Osteria Francescana")}>View Restaurant</Btn></div>
+            <div><Btn variant="primary" size="md" iconRight="arrow-right" onClick={() => go("restaurant", "Osteria Francescana")}>{l("View Restaurant")}</Btn></div>
           </div>
           <div style={{ position: "relative", minHeight: "380px" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -25,9 +27,9 @@ export function FeaturedPartner() {
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div style={{ padding: "40px 36px", display: "flex", flexDirection: "column", justifyContent: "center", gap: "14px", background: "#FCFBF8", borderLeft: "1px solid var(--border)" }}>
-            <InfoBlock icon="award" iconBg="#FCEFD6" iconColor="var(--star)" label="Michelin" value="Three Stars" />
-            <InfoBlock icon="map-pin" iconBg="#FBE3E4" iconColor="var(--red)" label="Location" value="Modena, Emilia-Romagna" />
-            <InfoBlock icon="calendar-check" iconBg="#E3F0E4" iconColor="var(--success)" label="Reservations" value="Open · Booking advised" />
+            <InfoBlock icon="award" iconBg="#FCEFD6" iconColor="var(--star)" label={l("Michelin")} value={l("Three Stars")} />
+            <InfoBlock icon="map-pin" iconBg="#FBE3E4" iconColor="var(--red)" label={l("Location")} value={l("Modena, Emilia-Romagna")} />
+            <InfoBlock icon="calendar-check" iconBg="#E3F0E4" iconColor="var(--success)" label={l("Reservations")} value={l("Open · Booking advised")} />
           </div>
         </div>
       </Container>
@@ -58,6 +60,7 @@ const RESTAURANTS = [
 
 function RestaurantCard({ name, location, cuisine, rating, image }: { name: string; location: string; cuisine: string; rating: number; image: string }) {
   const go = useGo();
+  const { l } = useI18n();
   const [h, setH] = useState(false);
   const [fav, setFav] = useState(false);
   return (
@@ -77,9 +80,9 @@ function RestaurantCard({ name, location, cuisine, rating, image }: { name: stri
           <Stars rating={rating} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "7px", color: "var(--text-2)", fontSize: "14px", marginBottom: "14px" }}>
-          <Icon name="map-pin" size={15} color="var(--text-2)" />{location}
+          <Icon name="map-pin" size={15} color="var(--text-2)" />{l(location)}
         </div>
-        <span style={{ display: "inline-block", fontSize: "12px", fontWeight: 600, color: "var(--red)", background: "#FBE9EA", borderRadius: "999px", padding: "5px 13px" }}>{cuisine}</span>
+        <span style={{ display: "inline-block", fontSize: "12px", fontWeight: 600, color: "var(--red)", background: "#FBE9EA", borderRadius: "999px", padding: "5px 13px" }}>{l(cuisine)}</span>
       </div>
     </div>
   );
@@ -87,11 +90,12 @@ function RestaurantCard({ name, location, cuisine, rating, image }: { name: stri
 
 export function TopRestaurants() {
   const go = useGo();
+  const { l } = useI18n();
   return (
     <section style={{ padding: "56px 0" }}>
       <Container style={{ maxWidth: "1320px" }}>
         <div className="reveal">
-          <SectionHead label="Top Restaurants" title="Top Restaurants" action={<ActionLink onClick={() => go("restaurants")}>View all restaurants</ActionLink>} />
+          <SectionHead label={l("Top Restaurants")} title={l("Top Restaurants")} action={<ActionLink onClick={() => go("restaurants")}>{l("View all restaurants")}</ActionLink>} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
             {RESTAURANTS.map((r) => <RestaurantCard key={r.name} {...r} />)}
           </div>
@@ -104,20 +108,21 @@ export function TopRestaurants() {
 /* ── Featured Story ─────────────────────────────────────────────── */
 export function FeaturedStory() {
   const go = useGo();
+  const { l } = useI18n();
   return (
     <section style={{ padding: "56px 0" }}>
       <Container style={{ maxWidth: "1320px" }}>
         <div className="reveal" style={{ background: "var(--text)", borderRadius: "24px", overflow: "hidden", display: "grid", gridTemplateColumns: "1.1fr 1fr", minHeight: "420px" }}>
           <div style={{ padding: "56px 52px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "22px" }}>
-              <span style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#F0A8AC" }}>Featured Story</span>
-              <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text)", background: "var(--star)", borderRadius: "999px", padding: "4px 11px" }}>Sponsored</span>
+              <span style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#F0A8AC" }}>{l("Featured Story")}</span>
+              <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text)", background: "var(--star)", borderRadius: "999px", padding: "4px 11px" }}>{l("Sponsored")}</span>
             </div>
-            <h2 style={{ fontSize: "42px", fontWeight: 600, letterSpacing: "-0.03em", lineHeight: 1.08, color: "#fff", marginBottom: "20px" }}>The Art of Handmade Pasta</h2>
+            <h2 style={{ fontSize: "42px", fontWeight: 600, letterSpacing: "-0.03em", lineHeight: 1.08, color: "#fff", marginBottom: "20px" }}>{l("The Art of Handmade Pasta")}</h2>
             <p style={{ fontSize: "17px", color: "rgba(255,255,255,0.66)", lineHeight: 1.65, marginBottom: "34px", maxWidth: "460px" }}>
-              Inside the workshops of Bologna&apos;s last sfogline, where flour, eggs and decades of muscle memory become tortellini folded entirely by hand.
+              {l("Inside the workshops of Bologna's last sfogline, where flour, eggs and decades of muscle memory become tortellini folded entirely by hand.")}
             </p>
-            <div><Btn variant="primary" size="lg" iconRight="arrow-right" onClick={() => go("story", "The Art of Handmade Pasta")}>Read the Story</Btn></div>
+            <div><Btn variant="primary" size="lg" iconRight="arrow-right" onClick={() => go("story", "The Art of Handmade Pasta")}>{l("Read the Story")}</Btn></div>
           </div>
           <div style={{ position: "relative" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -140,6 +145,7 @@ const STORIES = [
 
 function StoryCard({ type, badge, image, title, description, date, read, icon }: (typeof STORIES)[number]) {
   const go = useGo();
+  const { l, date: fmtDate, readTime } = useI18n();
   const [h, setH] = useState(false);
   const view = type === "Video" ? "video" : type === "News" ? "news" : "story";
   return (
@@ -148,7 +154,7 @@ function StoryCard({ type, badge, image, title, description, date, read, icon }:
       <div style={{ position: "relative", height: "210px", overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={image} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
-        <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#fff", background: badge, borderRadius: "999px", padding: "6px 13px" }}>{type}</span>
+        <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#fff", background: badge, borderRadius: "999px", padding: "6px 13px" }}>{l(type)}</span>
         {icon && (
           <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "58px", height: "58px", borderRadius: "50%", background: "rgba(255,255,255,0.92)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--shadow)" }}>
             <Icon name={icon} size={22} color="var(--red)" className="fill-current" />
@@ -156,11 +162,11 @@ function StoryCard({ type, badge, image, title, description, date, read, icon }:
         )}
       </div>
       <div style={{ padding: "22px 24px 24px" }}>
-        <h3 style={{ fontSize: "20px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.25, marginBottom: "10px" }}>{title}</h3>
-        <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "18px" }}>{description}</p>
+        <h3 style={{ fontSize: "20px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.25, marginBottom: "10px" }}>{l(title)}</h3>
+        <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "18px" }}>{l(description)}</p>
         <div style={{ display: "flex", alignItems: "center", gap: "14px", fontSize: "13px", color: "var(--text-2)", paddingTop: "16px", borderTop: "1px solid var(--border)" }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="calendar" size={14} color="var(--text-2)" />{date}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="clock" size={14} color="var(--text-2)" />{read}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="calendar" size={14} color="var(--text-2)" />{fmtDate(date)}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="clock" size={14} color="var(--text-2)" />{readTime(read)}</span>
         </div>
       </div>
     </div>
@@ -169,13 +175,14 @@ function StoryCard({ type, badge, image, title, description, date, read, icon }:
 
 export function FoodStories() {
   const [tab, setTab] = useState("All");
+  const { l } = useI18n();
   return (
     <section style={{ padding: "56px 0" }}>
       <Container style={{ maxWidth: "1320px" }}>
         <div className="reveal">
           <div style={{ marginBottom: "28px" }}>
-            <SectionLabel>Food Stories</SectionLabel>
-            <h2 style={{ fontSize: "40px", fontWeight: 600, letterSpacing: "-0.025em", color: "var(--text)", lineHeight: 1.1 }}>Food Stories</h2>
+            <SectionLabel>{l("Food Stories")}</SectionLabel>
+            <h2 style={{ fontSize: "40px", fontWeight: 600, letterSpacing: "-0.025em", color: "var(--text)", lineHeight: 1.1 }}>{l("Food Stories")}</h2>
           </div>
           <div style={{ display: "flex", gap: "8px", marginBottom: "36px", flexWrap: "wrap" }}>
             {STORY_TABS.map((tabName) => {
@@ -183,7 +190,7 @@ export function FoodStories() {
               return (
                 <button key={tabName} onClick={() => setTab(tabName)}
                   style={{ height: "40px", padding: "0 20px", borderRadius: "999px", fontSize: "14px", fontWeight: 600, color: on ? "#fff" : "var(--text)", background: on ? "var(--red)" : "var(--card)", boxShadow: on ? "none" : "inset 0 0 0 1px var(--border)", transition: "all 200ms ease" }}>
-                  {tabName}
+                  {l(tabName)}
                 </button>
               );
             })}
@@ -200,6 +207,7 @@ export function FoodStories() {
 /* ── Newsletter ─────────────────────────────────────────────────── */
 export function Newsletter() {
   const go = useGo();
+  const { l } = useI18n();
   return (
     <section style={{ padding: "56px 0" }}>
       <Container style={{ maxWidth: "1320px" }}>
@@ -213,16 +221,16 @@ export function Newsletter() {
             <span style={{ width: "52px", height: "52px", borderRadius: "14px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "22px" }}>
               <Icon name="mail" size={24} color="var(--red)" />
             </span>
-            <h2 style={{ fontSize: "34px", fontWeight: 600, letterSpacing: "-0.025em", color: "var(--text)", lineHeight: 1.1, marginBottom: "12px" }}>Love Italian food?</h2>
+            <h2 style={{ fontSize: "34px", fontWeight: 600, letterSpacing: "-0.025em", color: "var(--text)", lineHeight: 1.1, marginBottom: "12px" }}>{l("Love Italian food?")}</h2>
             <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "28px", maxWidth: "440px" }}>
-              Get the best restaurant openings, food stories and hidden gems delivered to your inbox every week.
+              {l("Get the best restaurant openings, food stories and hidden gems delivered to your inbox every week.")}
             </p>
             <div style={{ display: "flex", gap: "12px", maxWidth: "480px", flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: "220px", display: "flex", alignItems: "center", gap: "10px", background: "#FCFBF8", borderRadius: "14px", border: "1px solid var(--border)", padding: "0 18px", height: "52px" }}>
                 <Icon name="mail" size={18} color="var(--text-2)" />
-                <input placeholder="Your email address" style={{ flex: 1, fontSize: "15px", color: "var(--text)" }} />
+                <input placeholder={l("Your email address")} style={{ flex: 1, fontSize: "15px", color: "var(--text)" }} />
               </div>
-              <Btn variant="primary" size="lg" onClick={() => go("newsletter-success")}>Subscribe</Btn>
+              <Btn variant="primary" size="lg" onClick={() => go("newsletter-success")}>{l("Subscribe")}</Btn>
             </div>
           </div>
         </div>

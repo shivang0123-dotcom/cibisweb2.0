@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "./icons";
 import { Container, useGo } from "./ui";
+import { useL } from "./i18n";
 
 const FOOTER_COLS: Record<string, string[]> = {
   Explore: ["Restaurants", "Food Stories", "Videos", "News", "Chefs"],
@@ -19,6 +20,7 @@ const FOOT_ROUTES: Record<string, [string, string?]> = {
 };
 
 export function Footer() {
+  const l = useL();
   return (
     <footer style={{ background: "var(--card)", borderTop: "1px solid var(--border)", paddingTop: "64px", paddingBottom: "32px", marginTop: "24px" }}>
       <Container style={{ maxWidth: "1320px" }}>
@@ -26,7 +28,7 @@ export function Footer() {
           <div>
             <a href="#" style={{ fontSize: "23px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)" }}>CIBIS<span style={{ color: "var(--red)" }}>WEB</span></a>
             <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.65, margin: "16px 0 22px", maxWidth: "260px" }}>
-              Discover Italy through its food. Restaurants, chefs, stories and the culture behind every plate.
+              {l("Discover Italy through its food. Restaurants, chefs, stories and the culture behind every plate.")}
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
               {["instagram", "facebook", "twitter", "youtube"].map((s) => <SocialBtn key={s} name={s} />)}
@@ -34,23 +36,23 @@ export function Footer() {
           </div>
           {Object.entries(FOOTER_COLS).map(([col, links]) => (
             <div key={col}>
-              <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.04em", color: "var(--text)", marginBottom: "18px" }}>{col}</div>
+              <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.04em", color: "var(--text)", marginBottom: "18px" }}>{l(col)}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {links.map((l) => <FootLink key={l} label={l} />)}
+                {links.map((lnk) => <FootLink key={lnk} label={lnk} />)}
               </div>
             </div>
           ))}
           <div>
-            <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.04em", color: "var(--text)", marginBottom: "18px" }}>Download App</div>
+            <div style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.04em", color: "var(--text)", marginBottom: "18px" }}>{l("Download App")}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <StoreBtn icon="apple" top="Download on the" big="App Store" />
-              <StoreBtn icon="play" top="Get it on" big="Google Play" />
+              <StoreBtn icon="apple" top={l("Download on the")} big="App Store" />
+              <StoreBtn icon="play" top={l("Get it on")} big="Google Play" />
             </div>
           </div>
         </div>
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-          <span style={{ fontSize: "13px", color: "var(--text-2)" }}>© 2026 CIBISWEB. All rights reserved.</span>
-          <span style={{ fontSize: "13px", color: "var(--text-2)" }}>Made with care in Italy 🇮🇹</span>
+          <span style={{ fontSize: "13px", color: "var(--text-2)" }}>{l("© 2026 CIBISWEB. All rights reserved.")}</span>
+          <span style={{ fontSize: "13px", color: "var(--text-2)" }}>{l("Made with care in Italy 🇮🇹")}</span>
         </div>
       </Container>
     </footer>
@@ -59,9 +61,10 @@ export function Footer() {
 
 function FootLink({ label }: { label: string }) {
   const go = useGo();
+  const l = useL();
   const [h, setH] = useState(false);
   const onGo = () => { const r = FOOT_ROUTES[label]; if (r) go(r[0], r[1] || ""); };
-  return <a href="#" onClick={(e) => { e.preventDefault(); onGo(); }} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} style={{ fontSize: "14px", color: h ? "var(--red)" : "var(--text-2)", transition: "color 180ms ease" }}>{label}</a>;
+  return <a href="#" onClick={(e) => { e.preventDefault(); onGo(); }} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} style={{ fontSize: "14px", color: h ? "var(--red)" : "var(--text-2)", transition: "color 180ms ease" }}>{l(label)}</a>;
 }
 
 function SocialBtn({ name }: { name: string }) {

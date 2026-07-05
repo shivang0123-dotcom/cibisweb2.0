@@ -10,6 +10,7 @@ import {
   type Suggestion,
 } from "./search-utils";
 import { POPULAR_CATEGORIES, RESTAURANTS, cityById } from "./data";
+import { useL } from "./i18n";
 
 const EXPERIENCES = [
   { label: "Fine Dining", icon: "utensils" },
@@ -34,12 +35,13 @@ const SEARCH_TIPS = [
 
 function ExperienceChip({ label, icon }: { label: string; icon: string }) {
   const go = useGo();
+  const l = useL();
   const [h, setH] = useState(false);
   return (
     <button onClick={() => go("experience", label)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{ display: "inline-flex", alignItems: "center", gap: "8px", height: "42px", padding: "0 18px", borderRadius: "999px", fontSize: "14px", fontWeight: 500, color: h ? "var(--red)" : "var(--text)", background: "var(--card)", boxShadow: h ? "inset 0 0 0 1.5px var(--red)" : "inset 0 0 0 1px var(--border)", transition: "box-shadow 200ms ease, color 200ms ease" }}>
       <Icon name={icon} size={16} color={h ? "var(--red)" : "var(--text-2)"} />
-      {label}
+      {l(label)}
     </button>
   );
 }
@@ -89,6 +91,7 @@ type RowAction = { run: () => void };
 
 function SearchBar() {
   const lang = useLang();
+  const l = useL();
   const go = useGo();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -148,47 +151,47 @@ function SearchBar() {
         <>
           {recent.length > 0 && (
             <div style={{ marginBottom: "6px" }}>
-              <PanelLabel action={<button onMouseDown={(e) => { e.preventDefault(); setRecent([]); }} style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)" }}>Clear All</button>}>Recent Searches</PanelLabel>
-              {recent.map((r) => <PanelRow key={r} icon="clock" active={hi === reg(() => submit(r))} onClick={() => submit(r)}>{r}</PanelRow>)}
+              <PanelLabel action={<button onMouseDown={(e) => { e.preventDefault(); setRecent([]); }} style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)" }}>{l("Clear All")}</button>}>{l("Recent Searches")}</PanelLabel>
+              {recent.map((r) => <PanelRow key={r} icon="clock" active={hi === reg(() => submit(r))} onClick={() => submit(r)}>{l(r)}</PanelRow>)}
             </div>
           )}
           <div style={{ marginBottom: "6px" }}>
-            <PanelLabel>Trending</PanelLabel>
-            {TRENDING.map((tr) => <PanelRow key={tr} icon="trending-up" active={hi === reg(() => submit(tr))} onClick={() => submit(tr)}>{tr}</PanelRow>)}
+            <PanelLabel>{l("Trending")}</PanelLabel>
+            {TRENDING.map((tr) => <PanelRow key={tr} icon="trending-up" active={hi === reg(() => submit(tr))} onClick={() => submit(tr)}>{l(tr)}</PanelRow>)}
           </div>
           <div style={{ marginBottom: "6px" }}>
-            <PanelLabel>Popular Dishes</PanelLabel>
+            <PanelLabel>{l("Popular Dishes")}</PanelLabel>
             {popularDishes(3).map((d) => (
-              <PanelRow key={d.id} icon="utensils" sub={`${cityById(d.cityId)?.name} · ${d.category}`} active={hi === reg(() => { remember(d.name); go("dish", d.name); setOpen(false); })}
+              <PanelRow key={d.id} icon="utensils" sub={`${l(cityById(d.cityId)?.name)} · ${l(d.category)}`} active={hi === reg(() => { remember(d.name); go("dish", d.name); setOpen(false); })}
                 onClick={() => { remember(d.name); go("dish", d.name); setOpen(false); }}>{d.name}</PanelRow>
             ))}
           </div>
           <div style={{ marginBottom: "6px" }}>
-            <PanelLabel>Popular Restaurants</PanelLabel>
+            <PanelLabel>{l("Popular Restaurants")}</PanelLabel>
             {popularRestaurants(3).map((r) => (
-              <PanelRow key={r.id} icon="store" sub={`★ ${r.rating.toFixed(1)} · ${cityById(r.cityId)?.name}`} active={hi === reg(() => { remember(r.name); go("restaurant", r.name); setOpen(false); })}
+              <PanelRow key={r.id} icon="store" sub={`★ ${r.rating.toFixed(1)} · ${l(cityById(r.cityId)?.name)}`} active={hi === reg(() => { remember(r.name); go("restaurant", r.name); setOpen(false); })}
                 onClick={() => { remember(r.name); go("restaurant", r.name); setOpen(false); }}>{r.name}</PanelRow>
             ))}
           </div>
           <div style={{ marginBottom: "6px" }}>
-            <PanelLabel>Popular Cities</PanelLabel>
+            <PanelLabel>{l("Popular Cities")}</PanelLabel>
             {popularCities(3).map((c) => (
-              <PanelRow key={c.id} icon="map-pin" sub={`${RESTAURANTS.filter((r) => r.cityId === c.id).length} restaurants · ${c.region}`} active={hi === reg(() => { remember(c.name); go("city", c.name); setOpen(false); })}
-                onClick={() => { remember(c.name); go("city", c.name); setOpen(false); }}>{c.name}</PanelRow>
+              <PanelRow key={c.id} icon="map-pin" sub={`${RESTAURANTS.filter((r) => r.cityId === c.id).length} ${l("restaurants")} · ${l(c.region)}`} active={hi === reg(() => { remember(c.name); go("city", c.name); setOpen(false); })}
+                onClick={() => { remember(c.name); go("city", c.name); setOpen(false); }}>{l(c.name)}</PanelRow>
             ))}
           </div>
 
           {/* Discover Something New — Surprise Me */}
           <div style={{ padding: "0 6px" }}>
-            <PanelLabel>Discover Something New</PanelLabel>
+            <PanelLabel>{l("Discover Something New")}</PanelLabel>
             <button onMouseDown={(e) => { e.preventDefault(); doSurprise(); }}
               style={{ width: "100%", display: "flex", alignItems: "center", gap: "14px", background: "linear-gradient(135deg, #FBE9EA, #F8F1E7)", borderRadius: "16px", padding: "14px 16px", textAlign: "left", transition: "transform 180ms ease", boxShadow: hi === reg(doSurprise) ? "inset 0 0 0 1.5px var(--red)" : "none" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "none"; }}>
               <span style={{ width: "40px", height: "40px", borderRadius: "12px", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", boxShadow: "var(--shadow-sm)" }}>🎲</span>
               <span style={{ flex: 1 }}>
-                <span style={{ display: "block", fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>Surprise Me</span>
-                <span style={{ display: "block", fontSize: "13px", color: "var(--text-2)" }}>Open a random restaurant, dish, story or city.</span>
+                <span style={{ display: "block", fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>{l("Surprise Me")}</span>
+                <span style={{ display: "block", fontSize: "13px", color: "var(--text-2)" }}>{l("Open a random restaurant, dish, story or city.")}</span>
               </span>
               <span style={{ color: "var(--red)" }}><Icon name="arrow-right" size={18} /></span>
             </button>
@@ -196,11 +199,11 @@ function SearchBar() {
 
           {/* Quick Search Tips */}
           <div style={{ padding: "0 6px", marginTop: "8px" }}>
-            <PanelLabel>Quick Search Tips</PanelLabel>
+            <PanelLabel>{l("Quick Search Tips")}</PanelLabel>
             <div style={{ display: "flex", flexDirection: "column", gap: "7px", padding: "0 8px 4px" }}>
               {SEARCH_TIPS.map((tip) => (
                 <span key={tip} style={{ display: "inline-flex", alignItems: "center", gap: "9px", fontSize: "13px", color: "var(--text-2)" }}>
-                  <Icon name="lightbulb" size={14} color="var(--star)" />{tip}
+                  <Icon name="lightbulb" size={14} color="var(--star)" />{l(tip)}
                 </span>
               ))}
             </div>
@@ -208,14 +211,14 @@ function SearchBar() {
 
           {/* Popular Categories */}
           <div style={{ padding: "0 6px", marginTop: "8px" }}>
-            <PanelLabel>Popular Categories</PanelLabel>
+            <PanelLabel>{l("Popular Categories")}</PanelLabel>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "0 8px 6px" }}>
               {POPULAR_CATEGORIES.map((cat) => (
                 <button key={cat} onMouseDown={(e) => { e.preventDefault(); remember(cat); go("search", cat); setOpen(false); }}
                   style={{ display: "inline-flex", alignItems: "center", gap: "7px", height: "36px", padding: "0 14px", borderRadius: "999px", fontSize: "13px", fontWeight: 500, color: "var(--text)", background: "var(--card)", boxShadow: "inset 0 0 0 1px var(--border)", transition: "box-shadow 180ms ease, color 180ms ease" }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "inset 0 0 0 1.5px var(--red)"; (e.currentTarget as HTMLElement).style.color = "var(--red)"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "inset 0 0 0 1px var(--border)"; (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}>
-                  <Icon name={CAT_ICON[cat] || "utensils"} size={14} color="var(--text-2)" />{cat}
+                  <Icon name={CAT_ICON[cat] || "utensils"} size={14} color="var(--text-2)" />{l(cat)}
                 </button>
               ))}
             </div>
@@ -224,10 +227,10 @@ function SearchBar() {
           {/* Discovery CTA */}
           <div style={{ margin: "8px 6px 4px", background: "#FCFBF8", border: "1px solid var(--border)", borderRadius: "16px", padding: "16px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
             <div>
-              <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)", marginBottom: "3px" }}>Not sure what to search?</div>
-              <div style={{ fontSize: "13px", color: "var(--text-2)", lineHeight: 1.5 }}>Explore hand-picked restaurants, dishes and stories.</div>
+              <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)", marginBottom: "3px" }}>{l("Not sure what to search?")}</div>
+              <div style={{ fontSize: "13px", color: "var(--text-2)", lineHeight: 1.5 }}>{l("Explore hand-picked restaurants, dishes and stories.")}</div>
             </div>
-            <Btn variant="primary" size="sm" iconRight="arrow-right" style={{ flexShrink: 0 }} onClick={() => { setOpen(false); go("restaurants"); }}>Explore Now</Btn>
+            <Btn variant="primary" size="sm" iconRight="arrow-right" style={{ flexShrink: 0 }} onClick={() => { setOpen(false); go("restaurants"); }}>{l("Explore Now")}</Btn>
           </div>
         </>
       )}
@@ -236,7 +239,7 @@ function SearchBar() {
         <button onMouseDown={(e) => { e.preventDefault(); submit(suggestion); }}
           style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", marginBottom: "4px", borderRadius: "12px", background: "#FBE9EA", textAlign: "left", boxShadow: hi === reg(() => submit(suggestion)) ? "inset 0 0 0 1.5px var(--red)" : "none" }}>
           <Icon name="search" size={16} color="var(--red)" />
-          <span style={{ fontSize: "14px", color: "var(--text)" }}>Did you mean <strong style={{ color: "var(--red)" }}>{suggestion}</strong>?</span>
+          <span style={{ fontSize: "14px", color: "var(--text)" }}>{l("Did you mean")} <strong style={{ color: "var(--red)" }}>{suggestion}</strong>?</span>
         </button>
       )}
 
@@ -244,13 +247,13 @@ function SearchBar() {
         <>
           {groupKeys.map((group) => (
             <div key={group} style={{ marginBottom: "4px" }}>
-              <PanelLabel>{group}</PanelLabel>
-              {grouped[group].map((s) => <PanelRow key={s.kind + s.label} icon={s.icon} sub={s.sub} active={hi === reg(() => goSuggestion(s))} onClick={() => goSuggestion(s)}>{s.label}</PanelRow>)}
+              <PanelLabel>{l(group)}</PanelLabel>
+              {grouped[group].map((s) => <PanelRow key={s.kind + s.label} icon={s.icon} sub={s.sub} active={hi === reg(() => goSuggestion(s))} onClick={() => goSuggestion(s)}>{l(s.label)}</PanelRow>)}
             </div>
           ))}
           <button onMouseDown={(e) => { e.preventDefault(); submit(); }}
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", height: "44px", marginTop: "4px", borderRadius: "12px", background: "var(--red)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>
-            See all results for “{q.trim()}” <Icon name="arrow-right" size={16} />
+            {l("See all results for")} “{q.trim()}” <Icon name="arrow-right" size={16} />
           </button>
         </>
       )}
@@ -260,8 +263,8 @@ function SearchBar() {
           <div style={{ display: "inline-flex", width: "46px", height: "46px", borderRadius: "14px", background: "#F5F3EE", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
             <Icon name="search-x" size={22} color="var(--text-2)" />
           </div>
-          <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)", marginBottom: "4px" }}>No matches for “{q}”</div>
-          <div style={{ fontSize: "13px", color: "var(--text-2)", marginBottom: "16px" }}>Try a dish, restaurant or city — or press Enter to search.</div>
+          <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)", marginBottom: "4px" }}>{l("No matches for")} “{q}”</div>
+          <div style={{ fontSize: "13px", color: "var(--text-2)", marginBottom: "16px" }}>{l("Try a dish, restaurant or city — or press Enter to search.")}</div>
           <div style={{ display: "flex", justifyContent: "center", gap: "8px", flexWrap: "wrap" }}>
             {popularDishes(3).map((d) => (
               <button key={d.id} onMouseDown={(e) => { e.preventDefault(); submit(d.name); }}
@@ -351,6 +354,7 @@ function SearchBar() {
 }
 
 function Hero3DFood() {
+  const l = useL();
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, active: false });
   const onMove = (e: React.MouseEvent) => {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -373,15 +377,15 @@ function Hero3DFood() {
           <div style={{ ...chip, top: "6px", left: "-18px", transform: "translateZ(95px)" }}>
             <span style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#FCEFD6", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="star" size={18} color="var(--star)" className="rating-star" /></span>
             <div>
-              <div style={{ fontSize: "15px", fontWeight: 600, lineHeight: 1.1 }}>4.9 Rating</div>
-              <div style={{ fontSize: "12px", color: "var(--text-2)" }}>2,400+ reviews</div>
+              <div style={{ fontSize: "15px", fontWeight: 600, lineHeight: 1.1 }}>{l("4.9 Rating")}</div>
+              <div style={{ fontSize: "12px", color: "var(--text-2)" }}>{l("2,400+ reviews")}</div>
             </div>
           </div>
           <div style={{ ...chip, bottom: "20px", right: "-22px", transform: "translateZ(130px)" }}>
             <span style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="map-pin" size={18} color="var(--red)" /></span>
             <div>
-              <div style={{ fontSize: "15px", fontWeight: 600, lineHeight: 1.1 }}>300+ Cities</div>
-              <div style={{ fontSize: "12px", color: "var(--text-2)" }}>Across Italy</div>
+              <div style={{ fontSize: "15px", fontWeight: 600, lineHeight: 1.1 }}>{l("300+ Cities")}</div>
+              <div style={{ fontSize: "12px", color: "var(--text-2)" }}>{l("Across Italy")}</div>
             </div>
           </div>
         </div>

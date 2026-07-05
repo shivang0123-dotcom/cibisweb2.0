@@ -5,6 +5,7 @@ import { Icon } from "./icons";
 import { Btn, Stars, useGo } from "./ui";
 import { cityById, type Dish, type Restaurant, type Story, type Video, type City, type News } from "./data";
 import { servedCount, restaurantsServing, dishStories, dishVideos, type Result } from "./search-utils";
+import { useI18n } from "./i18n";
 
 const cardBase: CSSProperties = {
   cursor: "pointer", background: "var(--card)", borderRadius: "20px", border: "1px solid var(--border)",
@@ -19,6 +20,7 @@ const priceStr = (p: number) => "€".repeat(p);
 /* ── Restaurant card ────────────────────────────────────────────── */
 export function RestaurantCard({ r }: { r: Restaurant }) {
   const go = useGo();
+  const { l } = useI18n();
   const { h, on } = useHover();
   return (
     <div {...on} onClick={() => go("restaurant", r.name)}
@@ -32,7 +34,7 @@ export function RestaurantCard({ r }: { r: Restaurant }) {
           </span>
         )}
         {r.openNow && (
-          <span style={{ position: "absolute", top: "14px", right: "14px", fontSize: "11px", fontWeight: 600, color: "#fff", background: "var(--success)", borderRadius: "999px", padding: "5px 11px" }}>Open Now</span>
+          <span style={{ position: "absolute", top: "14px", right: "14px", fontSize: "11px", fontWeight: 600, color: "#fff", background: "var(--success)", borderRadius: "999px", padding: "5px 11px" }}>{l("Open Now")}</span>
         )}
       </div>
       <div style={{ padding: "20px 22px" }}>
@@ -41,10 +43,10 @@ export function RestaurantCard({ r }: { r: Restaurant }) {
           <Stars rating={r.rating} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "7px", color: "var(--text-2)", fontSize: "14px", marginBottom: "14px" }}>
-          <Icon name="map-pin" size={15} color="var(--text-2)" />{cityById(r.cityId)?.name}, {cityById(r.cityId)?.region}
+          <Icon name="map-pin" size={15} color="var(--text-2)" />{l(cityById(r.cityId)?.name)}, {l(cityById(r.cityId)?.region)}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", background: "#FBE9EA", borderRadius: "999px", padding: "5px 13px" }}>{r.cuisine}</span>
+          <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", background: "#FBE9EA", borderRadius: "999px", padding: "5px 13px" }}>{l(r.cuisine)}</span>
           <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-2)" }}>{priceStr(r.price)}</span>
         </div>
       </div>
@@ -55,24 +57,25 @@ export function RestaurantCard({ r }: { r: Restaurant }) {
 /* ── Dish card (with story / recipe / explore) ──────────────────── */
 export function DishCard({ d }: { d: Dish }) {
   const go = useGo();
+  const { l, dishDesc } = useI18n();
   const { h, on } = useHover();
   return (
     <div {...on} style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
       <div onClick={() => go("dish", d.name)} style={{ position: "relative", height: "200px", overflow: "hidden", cursor: "pointer" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={d.image} alt={d.name} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 500ms ease", transform: h ? "scale(1.06) rotate(-0.5deg)" : "scale(1)" }} />
-        <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", background: "rgba(17,17,17,0.6)", backdropFilter: "blur(6px)", borderRadius: "999px", padding: "5px 11px" }}>{d.category}</span>
+        <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", background: "rgba(17,17,17,0.6)", backdropFilter: "blur(6px)", borderRadius: "999px", padding: "5px 11px" }}>{l(d.category)}</span>
       </div>
       <div style={{ padding: "20px 22px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px", marginBottom: "6px" }}>
           <h3 onClick={() => go("dish", d.name)} style={{ fontSize: "19px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.2, cursor: "pointer" }}>{d.name}</h3>
           <Stars rating={d.rating} />
         </div>
-        <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.55, marginBottom: "16px", minHeight: "44px" }}>{d.description}</p>
+        <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.55, marginBottom: "16px", minHeight: "44px" }}>{dishDesc(d)}</p>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <MiniBtn icon="book-open" onClick={() => go("dish", d.name)}>Story</MiniBtn>
-          <MiniBtn icon="utensils" onClick={() => go("dish", d.name)}>Recipe</MiniBtn>
-          <Btn variant="primary" size="sm" iconRight="arrow-right" onClick={() => go("dish", d.name)}>Explore</Btn>
+          <MiniBtn icon="book-open" onClick={() => go("dish", d.name)}>{l("Story")}</MiniBtn>
+          <MiniBtn icon="utensils" onClick={() => go("dish", d.name)}>{l("Recipe")}</MiniBtn>
+          <Btn variant="primary" size="sm" iconRight="arrow-right" onClick={() => go("dish", d.name)}>{l("Explore")}</Btn>
         </div>
       </div>
     </div>
@@ -91,6 +94,7 @@ function MiniBtn({ icon, children, onClick }: { icon: string; children: React.Re
 /* ── Story card ─────────────────────────────────────────────────── */
 export function StoryResultCard({ s }: { s: Story }) {
   const go = useGo();
+  const { l, storyTitle, storyExcerpt, date, readTime } = useI18n();
   const { h, on } = useHover();
   const view = s.category === "Video" ? "video" : s.category === "News" ? "news" : "story";
   const badge = s.category === "Video" ? "#2E7D32" : s.category === "News" ? "#F5A623" : "#B3262E";
@@ -99,14 +103,14 @@ export function StoryResultCard({ s }: { s: Story }) {
       <div style={{ position: "relative", height: "190px", overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={s.image} alt={s.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
-        <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: badge, borderRadius: "999px", padding: "6px 13px" }}>{s.category}</span>
+        <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: badge, borderRadius: "999px", padding: "6px 13px" }}>{l(s.category)}</span>
       </div>
       <div style={{ padding: "20px 22px 22px" }}>
-        <h3 style={{ fontSize: "18px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.25, marginBottom: "10px" }}>{s.title}</h3>
-        <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.55, marginBottom: "16px" }}>{s.excerpt}</p>
+        <h3 style={{ fontSize: "18px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.25, marginBottom: "10px" }}>{storyTitle(s)}</h3>
+        <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.55, marginBottom: "16px" }}>{storyExcerpt(s)}</p>
         <div style={{ display: "flex", alignItems: "center", gap: "14px", fontSize: "13px", color: "var(--text-2)", paddingTop: "14px", borderTop: "1px solid var(--border)" }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="calendar" size={14} color="var(--text-2)" />{s.date}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="clock" size={14} color="var(--text-2)" />{s.readTime}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="calendar" size={14} color="var(--text-2)" />{date(s.date)}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="clock" size={14} color="var(--text-2)" />{readTime(s.readTime)}</span>
         </div>
       </div>
     </div>
@@ -116,6 +120,7 @@ export function StoryResultCard({ s }: { s: Story }) {
 /* ── Video card ─────────────────────────────────────────────────── */
 export function VideoCard({ v }: { v: Video }) {
   const go = useGo();
+  const { videoTitle } = useI18n();
   const { h, on } = useHover();
   return (
     <div {...on} onClick={() => go("video", v.title)} style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
@@ -128,7 +133,7 @@ export function VideoCard({ v }: { v: Video }) {
         <span style={{ position: "absolute", bottom: "12px", right: "12px", fontSize: "12px", fontWeight: 600, color: "#fff", background: "rgba(17,17,17,0.75)", borderRadius: "8px", padding: "3px 9px" }}>{v.duration}</span>
       </div>
       <div style={{ padding: "18px 22px 20px" }}>
-        <h3 style={{ fontSize: "17px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.3, marginBottom: "6px" }}>{v.title}</h3>
+        <h3 style={{ fontSize: "17px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.3, marginBottom: "6px" }}>{videoTitle(v.title)}</h3>
         <div style={{ fontSize: "13px", color: "var(--text-2)" }}>{v.channel}</div>
       </div>
     </div>
@@ -138,6 +143,7 @@ export function VideoCard({ v }: { v: Video }) {
 /* ── City card ──────────────────────────────────────────────────── */
 export function CityCard({ c }: { c: City }) {
   const go = useGo();
+  const { l } = useI18n();
   const { h, on } = useHover();
   return (
     <div {...on} onClick={() => go("city", c.name)} style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
@@ -146,12 +152,12 @@ export function CityCard({ c }: { c: City }) {
         <img src={c.image} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 500ms ease", transform: h ? "scale(1.05)" : "scale(1)" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(17,17,17,0.72), rgba(17,17,17,0) 55%)" }} />
         <div style={{ position: "absolute", left: "20px", bottom: "16px", right: "20px" }}>
-          <div style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}>{c.name}</div>
-          <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.85)" }}>{c.region}</div>
+          <div style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}>{l(c.name)}</div>
+          <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.85)" }}>{l(c.region)}</div>
         </div>
       </div>
       <div style={{ padding: "18px 22px 20px" }}>
-        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-2)", marginBottom: "8px" }}>Famous for</div>
+        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-2)", marginBottom: "8px" }}>{l("Famous for")}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
           {c.famous.slice(0, 3).map((f) => (
             <span key={f} style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", background: "#FBE9EA", borderRadius: "999px", padding: "5px 12px" }}>{f}</span>
@@ -165,17 +171,18 @@ export function CityCard({ c }: { c: City }) {
 /* ── News card ──────────────────────────────────────────────────── */
 export function NewsCard({ n }: { n: News }) {
   const go = useGo();
+  const { l, newsTitle, date } = useI18n();
   const { h, on } = useHover();
   return (
     <div {...on} onClick={() => go("news", n.title)} style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
       <div style={{ position: "relative", height: "180px", overflow: "hidden" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={n.image} alt={n.title} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
-        <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text)", background: "var(--star)", borderRadius: "999px", padding: "5px 12px" }}>{n.tag}</span>
+        <span style={{ position: "absolute", top: "14px", left: "14px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text)", background: "var(--star)", borderRadius: "999px", padding: "5px 12px" }}>{l(n.tag)}</span>
       </div>
       <div style={{ padding: "18px 22px 20px" }}>
-        <h3 style={{ fontSize: "17px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.3, marginBottom: "8px" }}>{n.title}</h3>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--text-2)" }}><Icon name="calendar" size={14} color="var(--text-2)" />{n.date}</div>
+        <h3 style={{ fontSize: "17px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.3, marginBottom: "8px" }}>{newsTitle(n.title)}</h3>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--text-2)" }}><Icon name="calendar" size={14} color="var(--text-2)" />{date(n.date)}</div>
       </div>
     </div>
   );
@@ -184,7 +191,9 @@ export function NewsCard({ n }: { n: News }) {
 /* ── Recipe card (dish presented as a cookable recipe) ──────────── */
 export function RecipeCard({ d }: { d: Dish }) {
   const go = useGo();
+  const { l, dishIngredients } = useI18n();
   const { h, on } = useHover();
+  const ing = dishIngredients(d);
   return (
     <div {...on} onClick={() => go("dish", d.name)}
       style={{ ...cardBase, boxShadow: h ? "var(--shadow-lg)" : "var(--shadow-sm)", transform: h ? "translateY(-4px)" : "none" }}>
@@ -192,18 +201,18 @@ export function RecipeCard({ d }: { d: Dish }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={d.image} alt={d.name} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 400ms ease", transform: h ? "scale(1.04)" : "scale(1)" }} />
         <span style={{ position: "absolute", top: "14px", left: "14px", display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: "var(--success)", borderRadius: "999px", padding: "6px 12px" }}>
-          <Icon name="chef-hat" size={13} color="#fff" />Recipe
+          <Icon name="chef-hat" size={13} color="#fff" />{l("Recipe")}
         </span>
       </div>
       <div style={{ padding: "20px 22px" }}>
         <h3 style={{ fontSize: "19px", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text)", lineHeight: 1.2, marginBottom: "12px" }}>{d.name}</h3>
         <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "13px", color: "var(--text-2)", marginBottom: "16px", flexWrap: "wrap" }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="timer" size={14} color="var(--text-2)" />{d.prepMinutes + d.cookMinutes} min</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="flame" size={14} color="var(--text-2)" />{d.difficulty}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="users" size={14} color="var(--text-2)" />Serves {d.servings}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="timer" size={14} color="var(--text-2)" />{d.prepMinutes + d.cookMinutes} {l("min")}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="flame" size={14} color="var(--text-2)" />{l(d.difficulty)}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Icon name="users" size={14} color="var(--text-2)" />{l("Serves")} {d.servings}</span>
         </div>
         <div style={{ fontSize: "13px", color: "var(--text-2)", lineHeight: 1.55, paddingTop: "14px", borderTop: "1px solid var(--border)" }}>
-          {d.ingredients.slice(0, 3).join(" · ")}{d.ingredients.length > 3 ? " · …" : ""}
+          {ing.slice(0, 3).join(" · ")}{ing.length > 3 ? " · …" : ""}
         </div>
       </div>
     </div>
@@ -224,6 +233,7 @@ export function ResultCard({ r }: { r: Result }) {
 /* ── AI Quick Summary card ──────────────────────────────────────── */
 export function QuickSummaryCard({ entity }: { entity: Result }) {
   const go = useGo();
+  const { l, dishDesc, blurb, cityBlurb } = useI18n();
   const wrap: CSSProperties = { background: "var(--card)", borderRadius: "24px", boxShadow: "var(--shadow)", border: "1px solid var(--border)", overflow: "hidden", display: "grid", gridTemplateColumns: "1.15fr 0.85fr", marginBottom: "40px" };
   const pad: CSSProperties = { padding: "36px 40px", display: "flex", flexDirection: "column", justifyContent: "center" };
   const label: CSSProperties = { fontSize: "12px", fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--red)", marginBottom: "12px", display: "inline-flex", alignItems: "center", gap: "7px" };
@@ -234,23 +244,23 @@ export function QuickSummaryCard({ entity }: { entity: Result }) {
     return (
       <div style={wrap} className="card-in">
         <div style={pad}>
-          <span style={label}><Icon name="star" size={14} color="var(--red)" />Quick Summary</span>
+          <span style={label}><Icon name="star" size={14} color="var(--red)" />{l("Quick Summary")}</span>
           <h2 style={{ fontSize: "38px", fontWeight: 600, letterSpacing: "-0.03em", color: "var(--text)", lineHeight: 1.05, marginBottom: "12px" }}>{d.name}</h2>
-          <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "20px", maxWidth: "480px" }}>{d.description}</p>
+          <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "20px", maxWidth: "480px" }}>{dishDesc(d)}</p>
           <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap", marginBottom: "26px" }}>
             <Stars rating={d.rating} />
-            <Stat icon="store" value={`${servedCount(d)} restaurants`} />
-            <Stat icon="book-open" value={`${stories.length} related stories`} />
-            <Stat icon="play" value={`${vids.length} videos`} />
+            <Stat icon="store" value={`${servedCount(d)} ${l("restaurants")}`} />
+            <Stat icon="book-open" value={`${stories.length} ${l("related stories")}`} />
+            <Stat icon="play" value={`${vids.length} ${l("videos")}`} />
           </div>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <Btn variant="primary" size="md" iconRight="arrow-right" onClick={() => go("dish", d.name)}>Explore Dish</Btn>
-            <Btn variant="outline" size="md" onClick={() => go("city", cityById(d.cityId)?.name || "")}>{cityById(d.cityId)?.name}</Btn>
+            <Btn variant="primary" size="md" iconRight="arrow-right" onClick={() => go("dish", d.name)}>{l("Explore Dish")}</Btn>
+            <Btn variant="outline" size="md" onClick={() => go("city", cityById(d.cityId)?.name || "")}>{l(cityById(d.cityId)?.name)}</Btn>
           </div>
           {rests.length > 0 && (
             <div style={{ marginTop: "22px", fontSize: "13px", color: "var(--text-2)" }}>
-              Served at <strong style={{ color: "var(--text)" }}>{rests.slice(0, 3).map((r) => r.name).join(", ")}</strong>
-              {rests.length > 3 ? ` +${rests.length - 3} more` : ""}
+              {l("Served at")} <strong style={{ color: "var(--text)" }}>{rests.slice(0, 3).map((r) => r.name).join(", ")}</strong>
+              {rests.length > 3 ? ` +${rests.length - 3} ${l("more")}` : ""}
             </div>
           )}
         </div>
@@ -267,24 +277,24 @@ export function QuickSummaryCard({ entity }: { entity: Result }) {
     return (
       <div style={wrap} className="card-in">
         <div style={pad}>
-          <span style={label}><Icon name="award" size={14} color="var(--red)" />Restaurant</span>
+          <span style={label}><Icon name="award" size={14} color="var(--red)" />{l("Restaurant")}</span>
           <h2 style={{ fontSize: "36px", fontWeight: 600, letterSpacing: "-0.03em", color: "var(--text)", lineHeight: 1.05, marginBottom: "12px" }}>{r.name}</h2>
-          <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "20px", maxWidth: "480px" }}>{r.blurb}</p>
+          <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "20px", maxWidth: "480px" }}>{blurb(r)}</p>
           <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap", marginBottom: "26px" }}>
             <Stars rating={r.rating} />
-            <Stat icon="map-pin" value={`${cityById(r.cityId)?.name}, ${cityById(r.cityId)?.region}`} />
-            <Stat icon="utensils" value={r.cuisine} />
+            <Stat icon="map-pin" value={`${l(cityById(r.cityId)?.name)}, ${l(cityById(r.cityId)?.region)}`} />
+            <Stat icon="utensils" value={l(r.cuisine)} />
             {r.michelin > 0 && <Stat icon="award" value={`${r.michelin} Michelin`} />}
           </div>
           <div style={{ marginBottom: "24px" }}>
-            <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-2)", marginBottom: "8px" }}>Signature dishes</div>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-2)", marginBottom: "8px" }}>{l("Signature dishes")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
               {r.signatureDishes.map((s) => <span key={s} style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", background: "#FBE9EA", borderRadius: "999px", padding: "5px 12px" }}>{s}</span>)}
             </div>
           </div>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <Btn variant="primary" size="md" iconRight="arrow-right" onClick={() => go("restaurant", r.name)}>View Restaurant</Btn>
-            <Btn variant="dark" size="md" icon="calendar-check" onClick={() => go("restaurant", r.name)}>Reserve</Btn>
+            <Btn variant="primary" size="md" iconRight="arrow-right" onClick={() => go("restaurant", r.name)}>{l("View Restaurant")}</Btn>
+            <Btn variant="dark" size="md" icon="calendar-check" onClick={() => go("restaurant", r.name)}>{l("Reserve")}</Btn>
           </div>
         </div>
         <div style={{ position: "relative", minHeight: "300px" }}>
@@ -300,16 +310,16 @@ export function QuickSummaryCard({ entity }: { entity: Result }) {
   return (
     <div style={wrap} className="card-in">
       <div style={pad}>
-        <span style={label}><Icon name="map-pin" size={14} color="var(--red)" />City Guide</span>
-        <h2 style={{ fontSize: "38px", fontWeight: 600, letterSpacing: "-0.03em", color: "var(--text)", lineHeight: 1.05, marginBottom: "12px" }}>{c.name}</h2>
-        <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "22px", maxWidth: "480px" }}>{c.blurb}</p>
+        <span style={label}><Icon name="map-pin" size={14} color="var(--red)" />{l("City Guide")}</span>
+        <h2 style={{ fontSize: "38px", fontWeight: 600, letterSpacing: "-0.03em", color: "var(--text)", lineHeight: 1.05, marginBottom: "12px" }}>{l(c.name)}</h2>
+        <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.6, marginBottom: "22px", maxWidth: "480px" }}>{cityBlurb(c)}</p>
         <div style={{ marginBottom: "24px" }}>
-          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-2)", marginBottom: "8px" }}>Famous dishes</div>
+          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-2)", marginBottom: "8px" }}>{l("Famous dishes")}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
             {c.famous.map((f) => <span key={f} style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", background: "#FBE9EA", borderRadius: "999px", padding: "5px 12px" }}>{f}</span>)}
           </div>
         </div>
-        <Btn variant="primary" size="md" iconRight="arrow-right" onClick={() => go("city", c.name)}>Explore {c.name}</Btn>
+        <Btn variant="primary" size="md" iconRight="arrow-right" onClick={() => go("city", c.name)}>{l("Explore")} {l(c.name)}</Btn>
       </div>
       <div style={{ position: "relative", minHeight: "300px" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
