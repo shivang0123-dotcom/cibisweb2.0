@@ -93,7 +93,8 @@ const UI: Record<string, string> = {
     "Ricevi le migliori aperture, storie di cibo e gemme nascoste nella tua casella ogni settimana.",
   "Your email address": "Il tuo indirizzo email",
   // Hero panel
-  "Recent Searches": "Ricerche Recenti", Trending: "Di Tendenza", "Popular Dishes": "Piatti Popolari",
+  "Recent Searches": "Ricerche Recenti", "No recent searches yet": "Ancora nessuna ricerca recente",
+  Trending: "Di Tendenza", "Popular Dishes": "Piatti Popolari",
   "Popular Restaurants": "Ristoranti Popolari", "Popular Categories": "Categorie Popolari",
   "Discover Something New": "Scopri Qualcosa di Nuovo", "Quick Search Tips": "Consigli di Ricerca",
   "Open a random restaurant, dish, story or city.": "Apri un ristorante, piatto, storia o città a caso.",

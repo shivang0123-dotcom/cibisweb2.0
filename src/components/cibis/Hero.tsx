@@ -33,6 +33,38 @@ const SEARCH_TIPS = [
   "Or a wine — “Barolo” finds the dishes it pairs with",
 ];
 
+/* Animated count-up — runs once when `run` flips true, respects reduced motion.
+   Uses a timer (not rAF) so it also advances in background/hidden tabs. */
+function useCountUp(target: number, run: boolean, duration = 1500) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (!run) return;
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setVal(target);
+      return;
+    }
+    const t0 = Date.now();
+    const id = window.setInterval(() => {
+      const p = Math.min(1, (Date.now() - t0) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(Math.round(target * eased));
+      if (p >= 1) window.clearInterval(id);
+    }, 32);
+    return () => window.clearInterval(id);
+  }, [target, run, duration]);
+  return val;
+}
+
+function Spinner({ light }: { light?: boolean }) {
+  return (
+    <span aria-hidden style={{
+      width: "18px", height: "18px", borderRadius: "50%", display: "inline-block",
+      border: `2px solid ${light ? "rgba(255,255,255,0.4)" : "rgba(17,17,17,0.2)"}`,
+      borderTopColor: light ? "#fff" : "var(--red)", animation: "spin 0.7s linear infinite",
+    }} />
+  );
+}
+
 function ExperienceChip({ label, icon }: { label: string; icon: string }) {
   const go = useGo();
   const l = useL();
@@ -98,6 +130,7 @@ function SearchBar() {
   const [q, setQ] = useState("");
   const [recent, setRecent] = useState<string[]>(["Rome", "Pizza", "Carbonara"]);
   const [hi, setHi] = useState(-1);
+  const [searching, setSearching] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const touchY = useRef<number | null>(null);
 
@@ -115,10 +148,14 @@ function SearchBar() {
   const remember = (term: string) => setRecent((r) => [term, ...r.filter((x) => x !== term)].slice(0, 5));
   const submit = (term?: string) => {
     const val = (term != null ? term : q).trim();
-    if (!val) return;
-    remember(val);
-    go("search", val);
-    setOpen(false);
+    if (!val || searching) return;
+    setSearching(true);
+    window.setTimeout(() => {
+      remember(val);
+      go("search", val);
+      setOpen(false);
+      setSearching(false);
+    }, 450);
   };
   const goSuggestion = (s: Suggestion) => {
     remember(s.label);
@@ -149,12 +186,12 @@ function SearchBar() {
     <>
       {!typing && (
         <>
-          {recent.length > 0 && (
-            <div style={{ marginBottom: "6px" }}>
-              <PanelLabel action={<button onMouseDown={(e) => { e.preventDefault(); setRecent([]); }} style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)" }}>{l("Clear All")}</button>}>{l("Recent Searches")}</PanelLabel>
-              {recent.map((r) => <PanelRow key={r} icon="clock" active={hi === reg(() => submit(r))} onClick={() => submit(r)}>{l(r)}</PanelRow>)}
-            </div>
-          )}
+          <div style={{ marginBottom: "6px" }}>
+            <PanelLabel action={recent.length > 0 ? <button onMouseDown={(e) => { e.preventDefault(); setRecent([]); }} style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)" }}>{l("Clear All")}</button> : undefined}>{l("Recent Searches")}</PanelLabel>
+            {recent.length > 0
+              ? recent.map((r) => <PanelRow key={r} icon="clock" active={hi === reg(() => submit(r))} onClick={() => submit(r)}>{l(r)}</PanelRow>)
+              : <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", fontSize: "13px", color: "var(--text-2)" }}><Icon name="clock" size={15} color="var(--text-2)" />{l("No recent searches yet")}</div>}
+          </div>
           <div style={{ marginBottom: "6px" }}>
             <PanelLabel>{l("Trending")}</PanelLabel>
             {TRENDING.map((tr) => <PanelRow key={tr} icon="trending-up" active={hi === reg(() => submit(tr))} onClick={() => submit(tr)}>{l(tr)}</PanelRow>)}
@@ -251,9 +288,9 @@ function SearchBar() {
               {grouped[group].map((s) => <PanelRow key={s.kind + s.label} icon={s.icon} sub={s.sub} active={hi === reg(() => goSuggestion(s))} onClick={() => goSuggestion(s)}>{l(s.label)}</PanelRow>)}
             </div>
           ))}
-          <button onMouseDown={(e) => { e.preventDefault(); submit(); }}
+          <button onMouseDown={(e) => { e.preventDefault(); submit(); }} disabled={searching}
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", height: "44px", marginTop: "4px", borderRadius: "12px", background: "var(--red)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>
-            {l("See all results for")} “{q.trim()}” <Icon name="arrow-right" size={16} />
+            {searching ? <Spinner light /> : <>{l("See all results for")} “{q.trim()}” <Icon name="arrow-right" size={16} /></>}
           </button>
         </>
       )}
@@ -301,7 +338,9 @@ function SearchBar() {
             <Icon name="x" size={17} />
           </button>
         )}
-        <Btn variant="primary" size="md" style={{ borderRadius: "13px" }} onClick={() => submit()}>{lang === "IT" ? "Cerca" : "Search"}</Btn>
+        <Btn variant="primary" size="md" style={{ borderRadius: "13px", minWidth: "104px" }} onClick={() => submit()}>
+          {searching ? <Spinner light /> : (lang === "IT" ? "Cerca" : "Search")}
+        </Btn>
       </div>
 
       {/* Desktop floating panel */}
@@ -355,7 +394,15 @@ function SearchBar() {
 
 function Hero3DFood() {
   const l = useL();
+  const lang = useLang();
+  const rootRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, active: false });
+
+  // Hero is the entry point (above the fold), so the count runs on mount.
+  const dishesCount = useCountUp(5000, true);
+  const restCount = useCountUp(2000, true);
+  const fmt = (n: number) => n.toLocaleString(lang === "IT" ? "it-IT" : "en-US");
+
   const onMove = (e: React.MouseEvent) => {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width - 0.5;
@@ -366,7 +413,7 @@ function Hero3DFood() {
   const chip: CSSProperties = { position: "absolute", background: "var(--card)", borderRadius: "16px", boxShadow: "var(--shadow-lg)", padding: "12px 16px", display: "flex", alignItems: "center", gap: "11px" };
 
   return (
-    <div className="reveal in" onMouseMove={onMove} onMouseLeave={reset}
+    <div ref={rootRef} className="reveal in" onMouseMove={onMove} onMouseLeave={reset}
       style={{ position: "relative", display: "flex", justifyContent: "center", perspective: "1100px", transformStyle: "preserve-3d" }}>
       <div style={{ position: "relative", width: "540px", height: "420px", transformStyle: "preserve-3d", animation: "floaty 6s ease-in-out infinite" }}>
         <div style={{ position: "absolute", inset: 0, transformStyle: "preserve-3d", transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`, transition: tilt.active ? "transform 120ms ease-out" : "transform 500ms cubic-bezier(.2,.8,.2,1)" }}>
@@ -375,17 +422,17 @@ function Hero3DFood() {
           <Image src="/assets/carbonara-plate.png" alt="Spaghetti Carbonara" width={540} height={420} priority unoptimized
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", transform: "translateZ(0)", filter: "drop-shadow(0 26px 34px rgba(17,17,17,0.22))" }} />
           <div style={{ ...chip, top: "6px", left: "-18px", transform: "translateZ(95px)" }}>
-            <span style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#FCEFD6", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="star" size={18} color="var(--star)" className="rating-star" /></span>
+            <span style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#FCEFD6", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="utensils" size={18} color="var(--star)" /></span>
             <div>
-              <div style={{ fontSize: "15px", fontWeight: 600, lineHeight: 1.1 }}>{l("4.9 Rating")}</div>
-              <div style={{ fontSize: "12px", color: "var(--text-2)" }}>{l("2,400+ reviews")}</div>
+              <div style={{ fontSize: "15px", fontWeight: 600, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>{fmt(dishesCount)}+</div>
+              <div style={{ fontSize: "12px", color: "var(--text-2)" }}>{l("Dishes")}</div>
             </div>
           </div>
           <div style={{ ...chip, bottom: "20px", right: "-22px", transform: "translateZ(130px)" }}>
-            <span style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="map-pin" size={18} color="var(--red)" /></span>
+            <span style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#FBE3E4", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="store" size={18} color="var(--red)" /></span>
             <div>
-              <div style={{ fontSize: "15px", fontWeight: 600, lineHeight: 1.1 }}>{l("300+ Cities")}</div>
-              <div style={{ fontSize: "12px", color: "var(--text-2)" }}>{l("Across Italy")}</div>
+              <div style={{ fontSize: "15px", fontWeight: 600, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>{fmt(restCount)}+</div>
+              <div style={{ fontSize: "12px", color: "var(--text-2)" }}>{l("Restaurants")}</div>
             </div>
           </div>
         </div>
@@ -396,8 +443,13 @@ function Hero3DFood() {
 
 export function Hero() {
   const lang = useLang();
+  const heroRef = useRef<HTMLElement>(null);
+  const scrollNext = () => {
+    const next = heroRef.current?.nextElementSibling as HTMLElement | null;
+    (next ?? heroRef.current)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   return (
-    <section style={{ position: "relative", overflow: "visible" }}>
+    <section ref={heroRef} style={{ position: "relative", overflow: "visible" }}>
       <Container style={{ maxWidth: "1320px", paddingTop: "72px", paddingBottom: "64px", display: "grid", gridTemplateColumns: "1.05fr 0.95fr", gap: "56px", alignItems: "center" }}>
         <div className="reveal in">
           <h1 style={{ fontSize: "64px", fontWeight: 600, lineHeight: 1.04, letterSpacing: "-0.035em", color: "var(--text)" }}>
@@ -418,12 +470,14 @@ export function Hero() {
         </div>
         <Hero3DFood />
       </Container>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", paddingBottom: "36px" }}>
+      <button onClick={scrollNext} aria-label={lang === "IT" ? "Scorri per esplorare" : "Scroll to explore"}
+        className="scroll-cue"
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", paddingBottom: "36px", margin: "0 auto", background: "none", cursor: "pointer", transition: "transform 220ms ease" }}>
         <span style={{ width: "24px", height: "38px", borderRadius: "12px", border: "2px solid #D6D3CC", display: "flex", justifyContent: "center", paddingTop: "7px" }}>
           <span style={{ width: "4px", height: "8px", borderRadius: "2px", background: "var(--red)", animation: "scrolldot 1.6s ease-in-out infinite" }} />
         </span>
         <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-2)" }}>{lang === "IT" ? "Scorri per esplorare" : "Scroll to Explore"}</span>
-      </div>
+      </button>
     </section>
   );
 }
